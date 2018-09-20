@@ -6,10 +6,26 @@
 
 using namespace std;
 
+using Header = tuple<
+      uint32_t
+    , uint16_t
+    , uint16_t
+    , uint64_t
+    , uint64_t
+    , uint64_t
+    , uint16_t
+    , uint16_t
+    , uint64_t
+    , uint64_t
+    , uint32_t
+    , uint64_t
+    >;
+
+
 class BBIHeader
 {
 public:
-	uint32_t magic;
+	/*uint32_t magic;
 	uint16_t version;
 	uint16_t zoom_levels;
 	uint64_t chrom_tree_offset;
@@ -20,7 +36,9 @@ public:
 	uint64_t auto_sql_offset;
 	uint64_t total_summary_offset;
 	uint32_t uncompress_buf_size;
-	uint64_t reserved_part;
+	uint64_t reserved_part;*/
+
+	Header bbi;
 	
 	BBIHeader(){}
 	
@@ -37,7 +55,7 @@ public:
 		zoom_levels = buf[6];
 		chrom_tree_offset = buf[8];
 		full_data_offset = buf[16];*/
-		file.read(reinterpret_cast<char*>(&magic), 4);
+		/*file.read(reinterpret_cast<char*>(&magic), 4);
 		file.read(reinterpret_cast<char*>(&version), 2);
 		file.read(reinterpret_cast<char*>(&zoom_levels), 2);
 		file.read(reinterpret_cast<char*>(&chrom_tree_offset), 8);
@@ -48,25 +66,45 @@ public:
 		file.read(reinterpret_cast<char*>(&auto_sql_offset), 8);
 		file.read(reinterpret_cast<char*>(&total_summary_offset), 8);
 		file.read(reinterpret_cast<char*>(&uncompress_buf_size), 4);
-		file.read(reinterpret_cast<char*>(&reserved_part), 8);
+		file.read(reinterpret_cast<char*>(&reserved_part), 8);*/
+		read_data<ifstream, Header, 0>(file, bbi);
+		print<0>();
 	}
 	
+	template<typename F, typename T, size_t n>
+	void read_data(F& file, T& data)
+	{
+	    file.read(reinterpret_cast<char*>(&(get<n>(data))), sizeof(decltype(get<n>(data))));
+	    if constexpr (n != 11)
+		read_data<F, T, n+1>(file, data);
+	}
+
+	template<size_t n>
 	void print()
+	{
+	    if constexpr (n == 0)
+		cout << hex << get<n>(bbi) << endl;;
+	    if constexpr (n != 0)
+		cout << dec << get<n>(bbi) << endl;;
+	    if constexpr (n != 11)
+		print<n+1>();
+	}
+
+	/*void print()
 	{
 		cout << hex << "magic: " << magic << endl;
 		cout << dec << "version: " << version << endl;
 		cout << dec << "zoom_levels: " << zoom_levels << endl;
 		cout << dec << "chrom_tree_offset: " << chrom_tree_offset << endl;
 		cout << dec << "full_data_offset: " << full_data_offset << endl;
-		/*cout << dec << "full_index_offset: " << full_index_offset << endl;
+		cout << dec << "full_index_offset: " << full_index_offset << endl;
 		cout << dec << "field_count: " << field_count << endl;
 		cout << dec << "defined_field_count: " << defined_field_count << endl;
 		cout << dec << "auto_sql_offset: " << auto_sql_offset << endl;
 		cout << dec << "total_summary_offset: " << total_summary_offset << endl;
 		cout << dec << "uncompress_buf_size: " << uncompress_buf_size << endl;
 		cout << dec << "reserved_part: " << reserved_part << endl;
-		*/
-	}
+	}*/
 };
 
 
@@ -79,7 +117,7 @@ int main()
 	uint32_t magic;
 	f.read(reinterpret_cast<char*>(&magic), 4);
 	cout << hex << magic << endl;*/
-	bbi_header.print();
+	//bbi_header.print<0>();
 	//string magic(4, ' ');
 	//uint32_t magic;
 	//f.read(reinterpret_cast<char*>(&magic), 4);
