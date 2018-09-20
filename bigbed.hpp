@@ -183,17 +183,29 @@ namespace bigbed
         bool is_swapped_;
 	void preparse(std::istream& input)
 	{
-	    char buf[64];
-	    input.read(buf, sizeof(buf));
-	    //std::get<e_cast(HEADER_INDEX::BBIHeader)>(header_);	    
-	    set_bbi(std::get<e_cast(HEADER_INDEX::BBIHeader)>(header_), buf);
-
+	    read_bbi_data<std::istream, BBIHeader, 0>(input, std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
+	    print<0>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
 	}
 	
-	void set_bbi(auto& bbi_h, auto& buf)
+	template<typename F, typename T, size_t n>
+	void read_bbi_data(F& file, T& data)
 	{
-	    
+	    file.read(reinterpret_cast<char*>(&(std::get<n>(data))), sizeof(decltype(std::get<n>(data))));
+	    if constexpr (n != 11)
+		read_bbi_data<F, T, n+1>(file, data);
 	}
+	
+	template<size_t n>
+	void print(BBIHeader& bbi)
+	{
+	    if constexpr (n == 0)
+		std::cout << std::hex << std::get<n>(bbi) << std::endl;
+	    if constexpr (n != 0)
+		std::cout << std::dec << std::get<n>(bbi) << std::endl;
+	    if constexpr (n != 11)
+		print<n+1>(bbi);
+	}
+	
     };
 
     class BigBed

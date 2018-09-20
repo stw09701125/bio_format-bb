@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <fstream>
 #include "bigbed.hpp"
 
 using namespace biovoltron::format;
@@ -82,13 +83,16 @@ TEST(bb_header, constructor)
     // default constructor
     Header def;
     static_loop_check_EQ<0>(def, default_header_ans);
+    
+    std::ifstream ifile("../temp.bb", std::ios::binary);
+    Header test1(ifile);
 
     /*
     // istream constructor
     std::ifstream ifile(test1_bb() , std::ios::binary);
     Header test1(ifile);
     static_loop_check_EQ<0>(test1, test1_header_ans);
-
+    
     // copy constructor
     Header copy_test1(test1);
     static_loop_check_EQ<0>(copy_test1, test1_header_ans);
