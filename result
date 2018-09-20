@@ -1,0 +1,13 @@
+78ca8c91
+magic: 8789f2eb
+version: 4
+zoom_levels: 8
+chrom_tree_offset: 628
+full_data_offset: 677
+full_index_offset: 75539
+field_count: 3
+defined_field_count: 3
+auto_sql_offset: 304
+total_summary_offset: 524
+uncompress_buf_size: 16384
+reserved_part: 564
