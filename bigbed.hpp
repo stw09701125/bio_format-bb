@@ -184,11 +184,26 @@ namespace bigbed
 	void preparse(std::istream& input)
 	{
 	    read_bbi_data<std::istream, BBIHeader, 0>(input, std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
-	    print<0>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
+	    print_bbi<0>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
+	    auto chrom_root_offset = std::get<e_cast(BBI_INDEX::CHROM_TREE_OFFSET)>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
+	    read_chrom_data(input, chrom_root_offset);
 	}
 	
+	static void read_chrom_data(std::istream& file, std::size_t offset)
+	{
+	    file.seekg(offset);
+	    char is_leaf;
+	    char reserved;
+	    std::uint16_t child_num;
+
+	    file.read(is_leaf, sizeof(is_leaf));
+	    file.read(reserved, sizeof(reserved));
+
+
+	}
+
 	template<typename F, typename T, size_t n>
-	void read_bbi_data(F& file, T& data)
+	static void read_bbi_data(F& file, T& data)
 	{
 	    file.read(reinterpret_cast<char*>(&(std::get<n>(data))), sizeof(decltype(std::get<n>(data))));
 	    if constexpr (n != 11)
@@ -196,7 +211,7 @@ namespace bigbed
 	}
 	
 	template<size_t n>
-	void print(BBIHeader& bbi)
+	static void print_bbi(BBIHeader& bbi)
 	{
 	    if constexpr (n == 0)
 		std::cout << std::hex << std::get<n>(bbi) << std::endl;
