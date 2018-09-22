@@ -189,17 +189,75 @@ namespace bigbed
 	    read_chrom_data(input, chrom_root_offset);
 	}
 	
-	static void read_chrom_data(std::istream& file, std::size_t offset)
+	void r_read_bpt(std::istream& file, const std::size_t& offset, const std::uint32_t& key_size, const std::uint32_t& val_size)
 	{
 	    file.seekg(offset);
+	    
 	    char is_leaf;
 	    char reserved;
 	    std::uint16_t child_num;
 
 	    file.read(is_leaf, sizeof(is_leaf));
 	    file.read(reserved, sizeof(reserved));
+	    file.read(reinterpret_cast<char*>(&child_num), sizeof(child_num));
+	    
+	    std::string temp_name(key_size, "");
+	    std::string temp_id(val_size, "");
+	    std::string temp_size(val_size, "");
+	    
+	    if (is_leaf)
+	    {
+		for (std::size_t i = 0; i < child_num; ++i)
+		{
+		    file.read(&temp_name[0], key_size);
+		    file.read(&temp_id[0], val_size);
+		    file.read(&temp_size[0], val_size);
+		    
+		    auto& chrom_list = std::get<e_cast(HEADER_INDEX::CHROM_LIST)>(header_);
+		    std::get<e_cast(CHROM_INDEX::NAME)>(chrom_list[i]) = temp_name;
+		    std::get<e_cast(CHROM_INDEX::ID)>(chrom_list[i]) = temp_id;
+		    std::get<e_cast(CHROM_INDEX::SIZE)>(chrom_list[i]) = temp_size;
 
+		}
+	    }
+	    
+	    else
+	    {
+		std::vector<std::uint64_t> child_offsets;
+		child_offsets.resize(child_num);
+		for (std::size_t i = 0; i < child_num; ++i)
+		{
+		    file.read(&temp_name[0], key_size);
+		    file.read(reinterpret_cast<char*>(&child_offsets[i]), sizeof(child_offsets[i]));
+		}
+		
+		for (std::size_t i = 0; i < child_num; ++i)
+		{
+		    r_read_bpt(file, child_offsets[i], key_size, val_size);
+		}
+	    }
+	}
 
+	void read_chrom_data(std::istream& file, const std::size_t& offset)
+	{
+	    file.seekg(offset);
+	    std::uint32_t magic;
+	    std::uint32_t block_size;
+	    std::uint32_t key_size;
+	    std::uint32_t val_size;
+	    std::uint64_t item_count;
+	    std::uint64_t reserved;
+
+	    file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+	    file.read(reinterpret_cast<char*>(&block_size), sizeof(block_size));
+	    file.read(reinterpret_cast<char*>(&key_size), sizeof(key_size));
+	    file.read(reinterpret_cast<char*>(&val_size), sizeof(val_size));
+	    file.read(reinterpret_cast<char*>(&item_count), sizeof(item_count));
+	    file.read(reinterpret_cast<char*>(&reserved), sizeof(reserved));
+	    std::get<e_cast(HEADER_INDEX::CHROM_LIST)>(header_).resize(item_count);
+	    std::size_t root_offset = file.tellg();
+	    
+	    r_read_bpt(file, root_offset, key_size, val_size >> 1);
 	}
 
 	template<typename F, typename T, size_t n>
@@ -211,7 +269,7 @@ namespace bigbed
 	}
 	
 	template<size_t n>
-	static void print_bbi(BBIHeader& bbi)
+	static void print_bbi(const BBIHeader& bbi)
 	{
 	    if constexpr (n == 0)
 		std::cout << std::hex << std::get<n>(bbi) << std::endl;
