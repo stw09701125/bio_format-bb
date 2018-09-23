@@ -187,37 +187,57 @@ namespace bigbed
 	    print_bbi<0>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
 	    auto chrom_root_offset = std::get<e_cast(BBI_INDEX::CHROM_TREE_OFFSET)>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
 	    read_chrom_data(input, chrom_root_offset);
+	    for (auto& i : std::get<e_cast(HEADER_INDEX::CHROM_LIST)>(header_))
+	    {
+		std::cout << std::get<e_cast(CHROM_INDEX::NAME)>(i) << std::endl; 
+		std::cout << std::get<e_cast(CHROM_INDEX::ID)>(i) << std::endl; 
+		std::cout << std::get<e_cast(CHROM_INDEX::SIZE)>(i) << std::endl; 
+	    }
 	}
 	
 	void r_read_bpt(std::istream& file, const std::size_t& offset, const std::uint32_t& key_size, const std::uint32_t& val_size)
 	{
 	    file.seekg(offset);
 	    
-	    char is_leaf;
-	    char reserved;
+	    std::uint8_t is_leaf;
+	    std::uint8_t reserved;
 	    std::uint16_t child_num;
 
-	    file.read(is_leaf, sizeof(is_leaf));
-	    file.read(reserved, sizeof(reserved));
+	    file.read(reinterpret_cast<char*>(&is_leaf), sizeof(is_leaf));
+	    file.read(reinterpret_cast<char*>(&reserved), sizeof(reserved));
 	    file.read(reinterpret_cast<char*>(&child_num), sizeof(child_num));
 	    
-	    std::string temp_name(key_size, "");
-	    std::string temp_id(val_size, "");
-	    std::string temp_size(val_size, "");
+	    /*std::string temp_name("", key_size);
+	    std::string temp_id("", val_size);
+	    std::string temp_size("", val_size);*/
+
+	    char temp_name[key_size];
+	    //std::uint32_t temp_id;
+	    //std::uint32_t temp_size;
 	    
 	    if (is_leaf)
 	    {
 		for (std::size_t i = 0; i < child_num; ++i)
 		{
-		    file.read(&temp_name[0], key_size);
+		    /*file.read(&temp_name[0], key_size);
 		    file.read(&temp_id[0], val_size);
-		    file.read(&temp_size[0], val_size);
+		    file.read(&temp_size[0], val_size);*/
 		    
+		    file.read(temp_name, key_size);
+		    temp_name[key_size] = '\0';
 		    auto& chrom_list = std::get<e_cast(HEADER_INDEX::CHROM_LIST)>(header_);
+		    //file.read(reinterpret_cast<char*>(&temp_id), val_size);
+		    //file.read(reinterpret_cast<char*>(&temp_size), val_size);
+		    file.read(reinterpret_cast<char*>(&(std::get<e_cast(CHROM_INDEX::ID)>(chrom_list[i]))), val_size);
+		    file.read(reinterpret_cast<char*>(&(std::get<e_cast(CHROM_INDEX::SIZE)>(chrom_list[i]))), val_size);
+		    
+		    /*std::get<e_cast(CHROM_INDEX::NAME)>(chrom_list[i]) = temp_name;
+		    std::get<e_cast(CHROM_INDEX::ID)>(chrom_list[i]) = (*reinterpret_cast<std::uint32_t*>(&temp_id[0]));
+		    std::get<e_cast(CHROM_INDEX::SIZE)>(chrom_list[i]) = (*reinterpret_cast<std::uint32_t*>(&temp_size[0]));*/
+		    
 		    std::get<e_cast(CHROM_INDEX::NAME)>(chrom_list[i]) = temp_name;
-		    std::get<e_cast(CHROM_INDEX::ID)>(chrom_list[i]) = temp_id;
-		    std::get<e_cast(CHROM_INDEX::SIZE)>(chrom_list[i]) = temp_size;
-
+		    //std::get<e_cast(CHROM_INDEX::ID)>(chrom_list[i]) = temp_id;
+		    //std::get<e_cast(CHROM_INDEX::SIZE)>(chrom_list[i]) = temp_size;
 		}
 	    }
 	    
@@ -276,7 +296,7 @@ namespace bigbed
 	    if constexpr (n != 0)
 		std::cout << std::dec << std::get<n>(bbi) << std::endl;
 	    if constexpr (n != 11)
-		print<n+1>(bbi);
+		print_bbi<n+1>(bbi);
 	}
 	
     };

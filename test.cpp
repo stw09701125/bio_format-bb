@@ -84,7 +84,7 @@ TEST(bb_header, constructor)
     Header def;
     static_loop_check_EQ<0>(def, default_header_ans);
     
-    std::ifstream ifile("../temp.bb", std::ios::binary);
+    std::ifstream ifile("../test.bb", std::ios::binary);
     Header test1(ifile);
 
     /*

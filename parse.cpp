@@ -111,7 +111,7 @@ public:
 int main()
 {
 	//std::cout << "test gcc" << std::endl;
-	ifstream f("../temp.bb", ios::binary);	
+	ifstream f("../test.bb", ios::binary);	
 	BBIHeader bbi_header(f);
 	/*f.seekg(bbi_header.chrom_tree_offset);
 	uint32_t magic;
