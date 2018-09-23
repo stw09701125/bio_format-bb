@@ -44,7 +44,41 @@ bigbed::HeaderType default_header_ans
 
 bigbed::HeaderType test1_header_ans
 {
-
+    bigbed::BBIHeader {0x8789f2eb, 4, 2, 1142, 2046, 4179, 12, 12, 304, 1038, 16384, 1078}
+  , bigbed::ChromList 
+    {
+	{"chr1", 0, 249250621, std::vector<bigbed::Offset>()}
+      , {"chr10", 1, 135534747, std::vector<bigbed::Offset>()}
+      ,	{"chr11", 2, 135006516, std::vector<bigbed::Offset>()}
+      ,	{"chr12", 3, 133851895, std::vector<bigbed::Offset>()}
+      ,	{"chr13", 4, 115169878, std::vector<bigbed::Offset>()}
+      , {"chr14", 5, 107349540, std::vector<bigbed::Offset>()}
+      , {"chr15", 6, 102531392, std::vector<bigbed::Offset>()}
+      , {"chr16", 7, 90354753, std::vector<bigbed::Offset>()}
+      , {"chr17", 8, 81195210, std::vector<bigbed::Offset>()}
+      , {"chr17_ctg5_hap1", 9, 1680828, std::vector<bigbed::Offset>()}
+      ,	{"chr18", 10, 78077248, std::vector<bigbed::Offset>()}
+      , {"chr19", 11, 59128983, std::vector<bigbed::Offset>()}
+      , {"chr1_gl000192_random", 12, 547496, std::vector<bigbed::Offset>()}
+      , {"chr2", 13, 243199373, std::vector<bigbed::Offset>()}
+      , {"chr20", 14, 63025520, std::vector<bigbed::Offset>()}
+      , {"chr21", 15, 48129895, std::vector<bigbed::Offset>()}
+      , {"chr22", 16, 51304566, std::vector<bigbed::Offset>()}
+      ,	{"chr3", 17, 198022430, std::vector<bigbed::Offset>()}
+      , {"chr4", 18, 191154276, std::vector<bigbed::Offset>()}
+      , {"chr5", 19, 180915260, std::vector<bigbed::Offset>()}
+      , {"chr6", 20, 171115067, std::vector<bigbed::Offset>()}
+      , {"chr7", 21, 159138663, std::vector<bigbed::Offset>()}
+      , {"chr8", 22, 146364022, std::vector<bigbed::Offset>()}
+      , {"chr9", 23, 141213431, std::vector<bigbed::Offset>()}
+      , {"chrM", 24, 16571, std::vector<bigbed::Offset>()}
+      , {"chrUn_gl000220", 25, 161802, std::vector<bigbed::Offset>()}
+      , {"chrUn_gl000223", 26, 180455, std::vector<bigbed::Offset>()}
+      , {"chrUn_gl000228", 27, 129120, std::vector<bigbed::Offset>()}
+      , {"chrUn_gl000229", 28, 19913, std::vector<bigbed::Offset>()}
+      , {"chrX", 29, 155270560, std::vector<bigbed::Offset>()}
+      , {"chrY", 30, 59373566, std::vector<bigbed::Offset>()}
+    }
 };
 
 bigbed::HeaderType test2_header_ans
@@ -86,12 +120,13 @@ TEST(bb_header, constructor)
     
     std::ifstream ifile("../test.bb", std::ios::binary);
     Header test1(ifile);
-
-    /*
-    // istream constructor
-    std::ifstream ifile(test1_bb() , std::ios::binary);
-    Header test1(ifile);
     static_loop_check_EQ<0>(test1, test1_header_ans);
+
+    
+    // istream constructor
+    //std::ifstream ifile(test1_bb() , std::ios::binary);
+    //Header test1(ifile);
+    //static_loop_check_EQ<0>(test1, test1_header_ans);
     
     // copy constructor
     Header copy_test1(test1);
@@ -100,7 +135,6 @@ TEST(bb_header, constructor)
     // move constructor
     Header move_test1(std::move(copy_test1));
     static_loop_check_EQ<0>(move_test1, test1_header_ans);
-    */
 }
 
 /*
