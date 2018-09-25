@@ -246,10 +246,16 @@ namespace bigbed
 		    std::uint32_t end_base;
 		    std::uint64_t block_offset;
 		    std::uint64_t block_size;
+		    
+		    file.read(reinterpret_cast<char*>(&start_chrom_ix), sizeof(start_chrom_ix));
+		    file.read(reinterpret_cast<char*>(&start_base), sizeof(start_base));
+		    file.read(reinterpret_cast<char*>(&end_chrom_ix), sizeof(end_chrom_ix));
+		    file.read(reinterpret_cast<char*>(&end_base), sizeof(end_base));
+		    file.read(reinterpret_cast<char*>(&block_offset), sizeof(block_offset));
+		    file.read(reinterpret_cast<char*>(&block_size), sizeof(block_size));
+		    
 		    if (is_overlapped(id, start, end, start_chrom_ix, start_base, end_chrom_ix, end_base))
 		    {
-			file.read(reinterpret_cast<char*>(&block_offset), sizeof(block_offset));
-			file.read(reinterpret_cast<char*>(&block_size), sizeof(block_size));
 			offset_list.push_back({block_offset, block_size});
 		    }
 		}
