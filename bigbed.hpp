@@ -197,10 +197,95 @@ namespace bigbed
 	    auto& data_index_offset = std::get<e_cast(BBI_INDEX::DATA_INDEX_OFFSET)>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
 	    read_data_blocks_offset(input, data_index_offset);       
 	}
-	
-	void r_read_Rtree(std::istream& file, const std::size_t& offset, const std::size_t& chrom_id, const std::size_t& start, const std::size_t& end)
+
+	template<typename T>
+	const auto compare_overlapping(const T l_hi, const T l_lo, const T r_hi, const T r_lo) const
 	{
-	    std::cout << chrom_id << std::endl;
+	    if (l_hi < r_hi) return 1;
+	    else if (l_hi > r_hi) return -1;
+	    else
+	    {
+		if (l_lo < r_lo) return 1;
+		else if (l_lo > r_lo) return -1;
+		else return 0;
+	    }
+	}
+
+	template<typename T>
+	const bool is_overlapped(const T chrom, const T start, const T end, const T start_chrom, const T start_base, const T end_chrom, const T end_base) const
+	{
+	    return compare_overlapping(chrom, start, end_chrom, end_base) > 0 && compare_overlapping(chrom, end, start_chrom, start_base) < 0;
+	}
+	
+	//void r_read_Rtree(std::istream& file, const std::size_t& offset, const std::size_t& chrom_id, const std::size_t& start, const std::size_t& end);
+	void r_read_Rtree(std::istream& file, const std::size_t& offset, Chrom& chrom)
+	{
+	    file.seekg(offset);    
+	    
+	    std::uint8_t is_leaf;
+	    std::uint8_t reserved;
+	    std::uint16_t child_num;
+	    
+	    auto& offset_list = std::get<e_cast(CHROM_INDEX::OFFSET_LIST)>(chrom);
+
+	    const std::uint32_t start = 0;
+	    const std::uint32_t& end = std::get<e_cast(CHROM_INDEX::SIZE)>(chrom);
+	    const std::uint32_t& id = std::get<e_cast(CHROM_INDEX::ID)>(chrom);
+
+	    file.read(reinterpret_cast<char*>(&is_leaf), sizeof(is_leaf));
+	    file.read(reinterpret_cast<char*>(&reserved), sizeof(reserved));
+	    file.read(reinterpret_cast<char*>(&child_num), sizeof(child_num));
+	    
+	    if (is_leaf)
+	    {
+		for (std::size_t i = 0; i < child_num; ++i)
+		{
+		    std::uint32_t start_chrom_ix;
+		    std::uint32_t start_base;
+		    std::uint32_t end_chrom_ix;
+		    std::uint32_t end_base;
+		    std::uint64_t block_offset;
+		    std::uint64_t block_size;
+		    if (is_overlapped(id, start, end, start_chrom_ix, start_base, end_chrom_ix, end_base))
+		    {
+			file.read(reinterpret_cast<char*>(&block_offset), sizeof(block_offset));
+			file.read(reinterpret_cast<char*>(&block_size), sizeof(block_size));
+			offset_list.push_back({block_offset, block_size});
+		    }
+		}
+	    }
+	    
+	    else
+	    {
+		std::vector<std::uint32_t> start_chrom_ixs;
+		std::vector<std::uint32_t> start_bases;
+		std::vector<std::uint32_t> end_chrom_ixs;
+		std::vector<std::uint32_t> end_bases;
+		std::vector<std::uint64_t> offsets;
+
+		start_chrom_ixs.resize(child_num);
+		start_bases.resize(child_num);
+		end_chrom_ixs.resize(child_num);
+		end_bases.resize(child_num);
+		offsets.resize(child_num);
+
+		for (std::size_t i = 0; i < child_num; ++i)
+		{
+		    file.read(reinterpret_cast<char*>(&start_chrom_ixs[i]), sizeof(start_chrom_ixs[i]));
+		    file.read(reinterpret_cast<char*>(&start_bases[i]), sizeof(start_bases[i]));
+		    file.read(reinterpret_cast<char*>(&end_chrom_ixs[i]), sizeof(end_chrom_ixs[i]));
+		    file.read(reinterpret_cast<char*>(&end_bases[i]), sizeof(end_bases[i]));
+		    file.read(reinterpret_cast<char*>(&offsets[i]), sizeof(offsets[i]));
+		}
+		
+		for (std::size_t i = 0; i < child_num; ++i)
+		{
+		    if (is_overlapped(id, start, end, start_chrom_ixs[i], start_bases[i], end_chrom_ixs[i], end_bases[i]))
+		    {
+			r_read_Rtree(file, offsets[i], chrom);
+		    }
+		}
+	    }
 	}
 
 	void read_data_blocks_offset(std::istream& file, const std::size_t& offset)
@@ -233,7 +318,9 @@ namespace bigbed
 	    
 	    for (auto& i : chrom_list)
 	    {
-		r_read_Rtree(file, root_offset, std::get<e_cast(CHROM_INDEX::ID)>(i), 0, std::get<e_cast(CHROM_INDEX::SIZE)>(i));
+		//r_read_Rtree(file, root_offset, std::get<e_cast(CHROM_INDEX::ID)>(i), 0, std::get<e_cast(CHROM_INDEX::SIZE)>(i));
+		std::get<e_cast(CHROM_INDEX::OFFSET_LIST)>(i).reserve(items_per_slot);
+		r_read_Rtree(file, root_offset, i);
 	    }
 	}
 	
