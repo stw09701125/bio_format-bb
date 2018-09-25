@@ -185,7 +185,7 @@ namespace bigbed
 	{
 	    read_bbi_data<std::istream, BBIHeader, 0>(input, std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
 	    //print_bbi<0>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
-	    auto chrom_root_offset = std::get<e_cast(BBI_INDEX::CHROM_TREE_OFFSET)>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
+	    auto& chrom_root_offset = std::get<e_cast(BBI_INDEX::CHROM_TREE_OFFSET)>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
 	    read_chrom_data(input, chrom_root_offset);
 	    /*for (auto& i : std::get<e_cast(HEADER_INDEX::CHROM_LIST)>(header_))
 	    {
@@ -193,6 +193,48 @@ namespace bigbed
 		std::cout << std::get<e_cast(CHROM_INDEX::ID)>(i) << std::endl; 
 		std::cout << std::get<e_cast(CHROM_INDEX::SIZE)>(i) << std::endl; 
 	    }*/
+	    // for ChromList rfind overlapping offset blocks
+	    auto& data_index_offset = std::get<e_cast(BBI_INDEX::DATA_INDEX_OFFSET)>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
+	    read_data_blocks_offset(input, data_index_offset);       
+	}
+	
+	void r_read_Rtree(std::istream& file, const std::size_t& offset, const std::size_t& chrom_id, const std::size_t& start, const std::size_t& end)
+	{
+	    std::cout << chrom_id << std::endl;
+	}
+
+	void read_data_blocks_offset(std::istream& file, const std::size_t& offset)
+	{
+	    file.seekg(offset);
+	    std::uint32_t magic;
+	    std::uint32_t block_size;
+	    std::uint64_t item_count;
+	    std::uint32_t start_chrom_ix;
+	    std::uint32_t start_base_offset;
+	    std::uint32_t end_chrom_ix;
+	    std::uint32_t end_base_offset;
+	    std::uint64_t data_end_offset;
+	    std::uint32_t items_per_slot;
+	    std::uint32_t reserved;
+
+	    file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+	    file.read(reinterpret_cast<char*>(&block_size), sizeof(block_size));
+	    file.read(reinterpret_cast<char*>(&item_count), sizeof(item_count));
+	    file.read(reinterpret_cast<char*>(&start_chrom_ix), sizeof(start_chrom_ix));
+	    file.read(reinterpret_cast<char*>(&start_base_offset), sizeof(start_base_offset));
+	    file.read(reinterpret_cast<char*>(&end_chrom_ix), sizeof(end_chrom_ix));
+	    file.read(reinterpret_cast<char*>(&end_base_offset), sizeof(end_base_offset));
+	    file.read(reinterpret_cast<char*>(&data_end_offset), sizeof(data_end_offset));
+	    file.read(reinterpret_cast<char*>(&items_per_slot), sizeof(items_per_slot));
+	    file.read(reinterpret_cast<char*>(&reserved), sizeof(reserved));
+
+	    std::size_t root_offset = file.tellg();
+	    auto& chrom_list = std::get<e_cast(HEADER_INDEX::CHROM_LIST)>(header_);
+	    
+	    for (auto& i : chrom_list)
+	    {
+		r_read_Rtree(file, root_offset, std::get<e_cast(CHROM_INDEX::ID)>(i), 0, std::get<e_cast(CHROM_INDEX::SIZE)>(i));
+	    }
 	}
 	
 	void r_read_bpt(std::istream& file, const std::size_t& offset, const std::uint32_t& key_size, const std::uint32_t& val_size)
