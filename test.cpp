@@ -201,6 +201,15 @@ TEST(BigBed, constructor)
     static_loop_check_EQ<0>(move_bb, default_bb_ans);
 }
 
+TEST(BigBed, member_function)
+{
+    using namespace bigbed;
+    std::ifstream ifile("../test.bb", std::ios::binary);
+    Header testh1(ifile);
+    BigBed test1(testh1);
+    BigBed::get_obj(ifile, test1);
+}
+
 /*
 TEST(BigBed, member_function)
 {
@@ -258,7 +267,7 @@ TEST(BigBed, member_function)
     BigBed::get_obj(ifile1, result);
     static_loop_check_EQ<0>(result, test2_bb_ans);
 };
-*/
+/*
 
 /*
 TEST(BigBed, operators)
