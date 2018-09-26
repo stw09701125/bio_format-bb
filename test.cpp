@@ -137,7 +137,7 @@ TEST(bb_header, constructor)
     static_loop_check_EQ<0>(move_test1, test1_header_ans);
 }
 
-/*
+
 TEST(bb_header, member_function)
 {
     using namespace bigbed;
@@ -146,7 +146,8 @@ TEST(bb_header, member_function)
     // Tested in static_loop_check_EQ()
 
     // reset()
-    std::ifstream ifile(test1_bb() , std::ios::binary);
+    std::ifstream ifile("../test.bb", std::ios::binary); 
+    //std::ifstream ifile(test1_bb() , std::ios::binary);
     Header test1(ifile);
     test1.reset();
     static_loop_check_EQ<0>(test1, default_header_ans);
@@ -154,7 +155,7 @@ TEST(bb_header, member_function)
     // preparse()
     // Tested in header constructor
 }
-*/
+
 
 /*
 TEST(bb_header, operators)

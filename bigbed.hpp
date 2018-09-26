@@ -15,6 +15,7 @@ namespace biovoltron::format{
 
 namespace bigbed
 {
+    
     /**
      * @brief to get the underlying type of scoped enum in order to get value from tuple type using scoped enum
      * @param scoped enum member
@@ -144,15 +145,22 @@ namespace bigbed
     {
       public:        
         Header()
-        : header_ (HeaderType { 
-	  bigbed::BBIHeader {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-        , bigbed::ChromList() 
+        : chrom_id_( 0 )
+	, offset_index_( 0 )
+	, data_buf_(nullptr)
+	, header_ (HeaderType { 
+	  BBIHeader {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+        , ChromList() 
         })
 	, is_swapped_( false )
         {}
         
         Header(std::istream& input)
-        {
+        : chrom_id_( 0 )
+	, offset_index_( 0 )
+	, data_buf_( nullptr )
+	, is_swapped_( false )
+	{
             preparse(input);
         }
         
@@ -168,9 +176,42 @@ namespace bigbed
             return std::get<n>(header_);
         }
 
-        void reset();
+        void reset()
+	{
+	    chrom_id_ = 0;
+	    offset_index_ = 0;
+	    data_buf_ = nullptr;
+	    is_swapped_ = false;
+	    std::get<e_cast(HEADER_INDEX::HEADER)>(header_) = BBIHeader {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	    std::get<e_cast(HEADER_INDEX::CHROM_LIST)>(header_).clear();
+	}
 
-        friend std::istream& operator>>(std::istream& input, Header& rhs)
+	char* bb_read(std::istream& input)
+	{
+	    //if (data_buf_)
+
+	    auto& chrom_list = std::get<e_cast(HEADER_INDEX::CHROM_LIST)>(header_);
+	    auto& chrom = chrom_list[chrom_id_];
+	    auto& offset_vector = std::get<e_cast(CHROM_INDEX::OFFSET_LIST)>(chrom);
+	    
+	    if (offset_index_ == offset_vector.size())
+	    {
+		chrom_id_++;
+		chrom = chrom_list[chrom_id_];
+		offset_vector = std::get<e_cast(CHROM_INDEX::OFFSET_LIST)>(chrom);
+	    }
+	    
+	    auto& offset = offset_vector[offset_index_];
+
+	    input.seekg(std::get<e_cast(OFFSET_INDEX::OFFSET)>(offset));
+	    input.read(data_buf_, std::get<e_cast(OFFSET_INDEX::SIZE)>(offset));
+
+	    // uncompress data_buf_ (uncompressed buf and uncompressed size) 
+
+	    return data_buf_;
+	}
+        
+	friend std::istream& operator>>(std::istream& input, Header& rhs)
         {
             rhs.preparse(input);
             return input;
@@ -179,7 +220,14 @@ namespace bigbed
         friend std::ostream& operator<<(std::ostream& output, const Header& rhs);
 
       private:
-        HeaderType header_;
+
+	// for bigbed reading
+	std::size_t chrom_id_;
+	std::size_t offset_index_;
+	char* data_buf_;
+	
+	// for header reading
+	HeaderType header_;
         bool is_swapped_;
 	void preparse(std::istream& input)
 	{
@@ -193,6 +241,7 @@ namespace bigbed
 		std::cout << std::get<e_cast(CHROM_INDEX::ID)>(i) << std::endl; 
 		std::cout << std::get<e_cast(CHROM_INDEX::SIZE)>(i) << std::endl; 
 	    }*/
+	    
 	    // for ChromList rfind overlapping offset blocks
 	    auto& data_index_offset = std::get<e_cast(BBI_INDEX::DATA_INDEX_OFFSET)>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
 	    read_data_blocks_offset(input, data_index_offset);       
@@ -217,7 +266,6 @@ namespace bigbed
 	    return compare_overlapping(chrom, start, end_chrom, end_base) > 0 && compare_overlapping(chrom, end, start_chrom, start_base) < 0;
 	}
 	
-	//void r_read_Rtree(std::istream& file, const std::size_t& offset, const std::size_t& chrom_id, const std::size_t& start, const std::size_t& end);
 	void r_read_Rtree(std::istream& file, const std::size_t& offset, Chrom& chrom)
 	{
 	    file.seekg(offset);    
@@ -324,7 +372,6 @@ namespace bigbed
 	    
 	    for (auto& i : chrom_list)
 	    {
-		//r_read_Rtree(file, root_offset, std::get<e_cast(CHROM_INDEX::ID)>(i), 0, std::get<e_cast(CHROM_INDEX::SIZE)>(i));
 		std::get<e_cast(CHROM_INDEX::OFFSET_LIST)>(i).reserve(items_per_slot);
 		r_read_Rtree(file, root_offset, i);
 	    }
@@ -416,8 +463,7 @@ namespace bigbed
 		std::cout << std::dec << std::get<n>(bbi) << std::endl;
 	    if constexpr (n != 11)
 		print_bbi<n+1>(bbi);
-	}
-	
+	}	
     };
 
     class BigBed
@@ -441,7 +487,7 @@ namespace bigbed
         ~BigBed() = default;
 
         template<std::size_t n>
-        auto get_member() const
+        const auto& get_member() const
         {
             return std::get<n>(data_members_);
         }
@@ -471,7 +517,11 @@ namespace bigbed
 
         std::string to_string();
 
-        static std::istream& get_obj(std::istream& in, BigBed& obj);
+        static std::istream& get_obj(std::istream& in, BigBed& obj)
+	{
+	    obj.header_.bb_read(in);
+	    return in;
+	}
 
         static void dump(std::ostream& out, std::vector<BigBed>& obj);
 
