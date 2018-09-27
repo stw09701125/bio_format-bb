@@ -9,6 +9,13 @@
 #include <iostream>
 #include <tuple>
 #include <vector>
+#include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/device/back_inserter.hpp>
+#include <boost/iostreams/copy.hpp>
+#include <boost/iostreams/concepts.hpp>
+#include <boost/iostreams/pipeline.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
 #include <zlib.h>
 
 namespace biovoltron::format{
@@ -199,7 +206,6 @@ namespace bigbed
 		auto& chrom_list = std::get<e_cast(HEADER_INDEX::CHROM_LIST)>(header_);
 		auto& chrom = chrom_list[chrom_id_];
 		auto& offset_vector = std::get<e_cast(CHROM_INDEX::OFFSET_LIST)>(chrom);
-		unsigned char* temp_buf;
 		
 		std::get<e_cast(MEMBER_INDEX::NAME)>(bb_member) = std::get<e_cast(CHROM_INDEX::NAME)>(chrom);
 
@@ -212,17 +218,26 @@ namespace bigbed
 	    
 		auto& offset = offset_vector[offset_index_];
 		auto& offset_size = std::get<e_cast(OFFSET_INDEX::SIZE)>(offset);
-
+		
+		std::string temp_buf("", offset_size);
 		input.seekg(std::get<e_cast(OFFSET_INDEX::OFFSET)>(offset));
-		input.read(reinterpret_cast<char*>(&temp_buf), offset_size);
+		input.read(&temp_buf[0], offset_size);
 
 		// uncompress data_buf_ (uncompressed buf and uncompressed size) 
 		auto& h = std::get<e_cast(HEADER_INDEX::HEADER)>(header_);
 		std::size_t data_buf_size = std::get<e_cast(BBI_INDEX::UNCOMPRESS_BUF_SIZE)>(h);
-		std::size_t real_unc_size = zUncompress(temp_buf, offset_size, data_buf_, data_buf_size);
+		//data_buf_ = std::string("", data_buf_size);
+		data_buf_ = "";
+		boost::iostreams::filtering_ostream un_zout(boost::iostreams::zlib_decompressor() | boost::iostreams::back_inserter(data_buf_));
+		boost::iostreams::copy(boost::make_iterator_range(temp_buf), un_zout);
+		
+		std::cout << data_buf_ << std::endl;
+		//data_buf_ = (unsigned char*)malloc(sizeof(char*) * data_buf_size);
+		//if (data_buf_ == nullptr) {std::cerr << "not enough memory" << std::endl;}
+		//std::size_t real_unc_size = zUncompress(temp_buf, offset_size, data_buf_, data_buf_size);
 		//auto err = uncompress(unc_buf, &unc_size, data_buf_, offset_size);
-		read_data_buf(bb_member, data_buf_);
-		print_mem<0>(bb_member);
+		//read_data_buf(bb_member, data_buf_);
+		//print_mem<0>(bb_member);
 	    }
 	}
         
@@ -239,7 +254,7 @@ namespace bigbed
 	// for bigbed reading
 	std::size_t chrom_id_;
 	std::size_t offset_index_;
-	unsigned char* data_buf_;
+	std::string data_buf_;
 	
 	// for header reading
 	HeaderType header_;
@@ -461,28 +476,28 @@ namespace bigbed
 	    r_read_bpt(file, root_offset, key_size, val_size >> 1);
 	}
 	
-	void read_data_buf(BBMemberType& bb_member, unsigned char* data_buf)
+	/*void read_data_buf(BBMemberType& bb_member, std::string& data_buf)
 	{
 	    std::get<e_cast(MEMBER_INDEX::START)>(bb_member) = *(reinterpret_cast<std::uint32_t*>(&data_buf[4])); 
 	    std::get<e_cast(MEMBER_INDEX::END)>(bb_member) = *(reinterpret_cast<std::uint32_t*>(&data_buf[8]));
 	    std::size_t len = strlen(reinterpret_cast<const char*>(data_buf));
 	    std::get<e_cast(MEMBER_INDEX::REST)>(bb_member).append(reinterpret_cast<const char*>(data_buf)); 
-	    /*std::size_t i = 9;
+	    std::size_t i = 9;
 	    while(data_buf[i] != '\0')
 	    {
 		std::get<e_cast(MEMBER_INDEX::REST)>(bb_member).append() 
 		++i;
-	    }*/
+	    }
 	    data_buf += len;
-	}
+	}*/
 
-	std::size_t zUncompress(const unsigned char* c_buf, std::size_t c_size, unsigned char* unc_buf, std::size_t unc_size)
+	/*std::size_t zUncompress(const unsigned char* c_buf, std::size_t c_size, unsigned char* unc_buf, std::size_t unc_size)
 	{
 	    uLongf uncomp_size = unc_size;
 	    auto err = uncompress(unc_buf, &uncomp_size, c_buf, c_size);
 	    if (err != 0) { std::cerr << "uncompress failed" << std::endl; }
 	    return uncomp_size;
-	}
+	}*/
 
 	template<typename F, typename T, size_t n>
 	static void read_bbi_data(F& file, T& data)
