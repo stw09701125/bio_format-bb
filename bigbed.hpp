@@ -237,8 +237,9 @@ namespace bigbed
 		//if (data_buf_ == nullptr) {std::cerr << "not enough memory" << std::endl;}
 		//std::size_t real_unc_size = zUncompress(temp_buf, offset_size, data_buf_, data_buf_size);
 		//auto err = uncompress(unc_buf, &unc_size, data_buf_, offset_size);
-		//read_data_buf(bb_member, data_buf_);
-		//print_mem<0>(bb_member);
+		read_data_buf(bb_member, data_buf_);
+		print_mem<0>(bb_member);
+		std::cout << data_buf_ << std::endl;
 	    }
 	}
         
@@ -482,13 +483,20 @@ namespace bigbed
 	    std::get<e_cast(MEMBER_INDEX::START)>(bb_member) = *(reinterpret_cast<std::uint32_t*>(&data_buf[4])); 
 	    std::get<e_cast(MEMBER_INDEX::END)>(bb_member) = *(reinterpret_cast<std::uint32_t*>(&data_buf[8]));
 	    //std::size_t len = strlen(reinterpret_cast<const char*>(data_buf)); 
-	    std::size_t i = 9;
+	    std::size_t i = 12;
+	    /*for (; i < data_buf.size(); ++i)
+	    {
+		if ((unsigned int)data_buf[i] <= 0)
+		    std::cout << (unsigned int)data_buf[i] << std::endl;
+		else
+		    std::cout << data_buf[i];
+	    }*/
 	    while(data_buf[i] != '\0')
 	    {
-		std::get<e_cast(MEMBER_INDEX::REST)>(bb_member).append() 
+		std::get<e_cast(MEMBER_INDEX::REST)>(bb_member).push_back(data_buf[i]); 
 		++i;
 	    }
-	    data_buf = ;
+	    data_buf = std::string_view(&data_buf[i], data_buf.size() - i);
 	}
 
 	/*std::size_t zUncompress(const unsigned char* c_buf, std::size_t c_size, unsigned char* unc_buf, std::size_t unc_size)
