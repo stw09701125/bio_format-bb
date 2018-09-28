@@ -154,7 +154,7 @@ namespace bigbed
         Header()
         : chrom_id_( 0 )
 	, offset_index_( 0 )
-	, data_buf_(nullptr)
+	, data_buf_("")
 	, header_ (HeaderType { 
 	  BBIHeader {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
         , ChromList() 
@@ -165,7 +165,7 @@ namespace bigbed
         Header(std::istream& input)
         : chrom_id_( 0 )
 	, offset_index_( 0 )
-	, data_buf_( nullptr )
+	, data_buf_( "" )
 	, is_swapped_( false )
 	{
             preparse(input);
@@ -187,7 +187,7 @@ namespace bigbed
 	{
 	    chrom_id_ = 0;
 	    offset_index_ = 0;
-	    data_buf_ = nullptr;
+	    data_buf_ = "";
 	    is_swapped_ = false;
 	    std::get<e_cast(HEADER_INDEX::HEADER)>(header_) = BBIHeader {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	    std::get<e_cast(HEADER_INDEX::CHROM_LIST)>(header_).clear();
@@ -227,11 +227,12 @@ namespace bigbed
 		auto& h = std::get<e_cast(HEADER_INDEX::HEADER)>(header_);
 		std::size_t data_buf_size = std::get<e_cast(BBI_INDEX::UNCOMPRESS_BUF_SIZE)>(h);
 		//data_buf_ = std::string("", data_buf_size);
-		data_buf_ = "";
+		//data_buf_ = std::string("", data_buf_size);
 		boost::iostreams::filtering_ostream un_zout(boost::iostreams::zlib_decompressor() | boost::iostreams::back_inserter(data_buf_));
 		boost::iostreams::copy(boost::make_iterator_range(temp_buf), un_zout);
 		
-		std::cout << data_buf_ << std::endl;
+		//std::cout << "this is a test" << std::endl;
+		//std::cout << data_buf_ << std::endl;
 		//data_buf_ = (unsigned char*)malloc(sizeof(char*) * data_buf_size);
 		//if (data_buf_ == nullptr) {std::cerr << "not enough memory" << std::endl;}
 		//std::size_t real_unc_size = zUncompress(temp_buf, offset_size, data_buf_, data_buf_size);
@@ -476,20 +477,19 @@ namespace bigbed
 	    r_read_bpt(file, root_offset, key_size, val_size >> 1);
 	}
 	
-	/*void read_data_buf(BBMemberType& bb_member, std::string& data_buf)
+	void read_data_buf(BBMemberType& bb_member, std::string& data_buf)
 	{
 	    std::get<e_cast(MEMBER_INDEX::START)>(bb_member) = *(reinterpret_cast<std::uint32_t*>(&data_buf[4])); 
 	    std::get<e_cast(MEMBER_INDEX::END)>(bb_member) = *(reinterpret_cast<std::uint32_t*>(&data_buf[8]));
-	    std::size_t len = strlen(reinterpret_cast<const char*>(data_buf));
-	    std::get<e_cast(MEMBER_INDEX::REST)>(bb_member).append(reinterpret_cast<const char*>(data_buf)); 
+	    //std::size_t len = strlen(reinterpret_cast<const char*>(data_buf)); 
 	    std::size_t i = 9;
 	    while(data_buf[i] != '\0')
 	    {
 		std::get<e_cast(MEMBER_INDEX::REST)>(bb_member).append() 
 		++i;
 	    }
-	    data_buf += len;
-	}*/
+	    data_buf = ;
+	}
 
 	/*std::size_t zUncompress(const unsigned char* c_buf, std::size_t c_size, unsigned char* unc_buf, std::size_t unc_size)
 	{
