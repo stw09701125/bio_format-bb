@@ -207,7 +207,17 @@ TEST(BigBed, member_function)
     std::ifstream ifile("../test.bb", std::ios::binary);
     Header testh1(ifile);
     BigBed test1(testh1);
+    //BigBed test2(testh1);
+    //BigBed test3(testh1);
+    //BigBed test4(testh1);
     BigBed::get_obj(ifile, test1);
+    BigBed test2(testh1);
+    BigBed::get_obj(ifile, test2);
+    BigBed test3(testh1);
+    BigBed::get_obj(ifile, test3);
+    BigBed test4(testh1);
+    BigBed::get_obj(ifile, test4);
+    
 }
 
 /*
@@ -267,7 +277,7 @@ TEST(BigBed, member_function)
     BigBed::get_obj(ifile1, result);
     static_loop_check_EQ<0>(result, test2_bb_ans);
 };
-/*
+*/
 
 /*
 TEST(BigBed, operators)
