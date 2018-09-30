@@ -196,25 +196,25 @@ namespace bigbed
 	void bb_read(std::istream& input, BBMemberType& bb_member)
 	{
 	    auto& chrom_list = std::get<e_cast(HEADER_INDEX::CHROM_LIST)>(header_);
-	    auto& chrom = chrom_list[chrom_id_];
-	    std::get<e_cast(MEMBER_INDEX::NAME)>(bb_member) = std::get<e_cast(CHROM_INDEX::NAME)>(chrom);
 	    
 	    if (data_buf_.size() > 0)
 	    {
+		std::get<e_cast(MEMBER_INDEX::NAME)>(bb_member) = std::get<e_cast(CHROM_INDEX::NAME)>(chrom_list[chrom_id_]);
 		read_data_buf(bb_member);
-		print_mem<0>(bb_member);
+		//print_mem<0>(bb_member);
 	    }
 	    else
 	    {
-		auto& offset_vector = std::get<e_cast(CHROM_INDEX::OFFSET_LIST)>(chrom);
-
-		if (offset_index_ == offset_vector.size())
+		auto& offset_vector_origin = std::get<e_cast(CHROM_INDEX::OFFSET_LIST)>(chrom_list[chrom_id_]);
+	    
+		if (offset_index_ == offset_vector_origin.size())
 		{
 		    chrom_id_++;
-		    chrom = chrom_list[chrom_id_];
-		    offset_vector = std::get<e_cast(CHROM_INDEX::OFFSET_LIST)>(chrom);
 		    offset_index_ = 0;
 		}
+		
+		auto& offset_vector = std::get<e_cast(CHROM_INDEX::OFFSET_LIST)>(chrom_list[chrom_id_]);
+		std::get<e_cast(MEMBER_INDEX::NAME)>(bb_member) = std::get<e_cast(CHROM_INDEX::NAME)>(chrom_list[chrom_id_]);
 	    
 		auto& offset = offset_vector[offset_index_];
 		auto& offset_size = std::get<e_cast(OFFSET_INDEX::SIZE)>(offset);
@@ -223,13 +223,13 @@ namespace bigbed
 		input.seekg(std::get<e_cast(OFFSET_INDEX::OFFSET)>(offset));
 		input.read(&temp_buf[0], offset_size);
 
-		auto& h = std::get<e_cast(HEADER_INDEX::HEADER)>(header_);
+		//auto& h = std::get<e_cast(HEADER_INDEX::HEADER)>(header_);
 		//std::size_t data_buf_size = std::get<e_cast(BBI_INDEX::UNCOMPRESS_BUF_SIZE)>(h);
 		boost::iostreams::filtering_ostream un_zout(boost::iostreams::zlib_decompressor() | boost::iostreams::back_inserter(data_buf_));
 		boost::iostreams::copy(boost::make_iterator_range(temp_buf), un_zout);
 		
 		read_data_buf(bb_member);
-		print_mem<0>(bb_member);
+		//print_mem<0>(bb_member);
 		offset_index_++;
 	    }
 	}
@@ -258,12 +258,6 @@ namespace bigbed
 	    //print_bbi<0>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
 	    auto& chrom_root_offset = std::get<e_cast(BBI_INDEX::CHROM_TREE_OFFSET)>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
 	    read_chrom_data(input, chrom_root_offset);
-	    /*for (auto& i : std::get<e_cast(HEADER_INDEX::CHROM_LIST)>(header_))
-	    {
-		std::cout << std::get<e_cast(CHROM_INDEX::NAME)>(i) << std::endl; 
-		std::cout << std::get<e_cast(CHROM_INDEX::ID)>(i) << std::endl; 
-		std::cout << std::get<e_cast(CHROM_INDEX::SIZE)>(i) << std::endl; 
-	    }*/
 	    
 	    // for ChromList rfind overlapping offset blocks
 	    auto& data_index_offset = std::get<e_cast(BBI_INDEX::DATA_INDEX_OFFSET)>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
@@ -473,15 +467,7 @@ namespace bigbed
 	{
 	    std::get<e_cast(MEMBER_INDEX::START)>(bb_member) = *(reinterpret_cast<std::uint32_t*>(&data_buf_[4])); 
 	    std::get<e_cast(MEMBER_INDEX::END)>(bb_member) = *(reinterpret_cast<std::uint32_t*>(&data_buf_[8]));
-	    //std::size_t len = strlen(reinterpret_cast<const char*>(data_buf)); 
 	    std::size_t i = 12;
-	    /*for (; i < data_buf.size(); ++i)
-	    {
-		if ((unsigned int)data_buf[i] <= 0)
-		    std::cout << (unsigned int)data_buf[i] << std::endl;
-		else
-		    std::cout << data_buf[i];
-	    }*/
 	    while(data_buf_[i] != '\0')
 	    {
 		std::get<e_cast(MEMBER_INDEX::REST)>(bb_member).push_back(data_buf_[i]); 
@@ -489,14 +475,6 @@ namespace bigbed
 	    }
 	    data_buf_ = std::string_view(&data_buf_[i+1], data_buf_.size() - i - 1);
 	}
-
-	/*std::size_t zUncompress(const unsigned char* c_buf, std::size_t c_size, unsigned char* unc_buf, std::size_t unc_size)
-	{
-	    uLongf uncomp_size = unc_size;
-	    auto err = uncompress(unc_buf, &uncomp_size, c_buf, c_size);
-	    if (err != 0) { std::cerr << "uncompress failed" << std::endl; }
-	    return uncomp_size;
-	}*/
 
 	template<typename F, typename T, size_t n>
 	static void read_bbi_data(F& file, T& data)

@@ -234,11 +234,8 @@ TEST(BigBed, member_function)
     BigBed test3(testh1);
     BigBed test4(testh1);
     BigBed::get_obj(ifile, test1);
-    //BigBed test2(testh1);
     BigBed::get_obj(ifile, test2);
-    //BigBed test3(testh1);
     BigBed::get_obj(ifile, test3);
-    //BigBed test4(testh1);
     BigBed::get_obj(ifile, test4);
     static_loop_check_EQ<0>(test1.get_header(), test1_header_ans);
     static_loop_check_EQ<0>(test1, test1_bb_ans);
