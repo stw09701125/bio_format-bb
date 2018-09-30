@@ -201,7 +201,6 @@ namespace bigbed
 	    {
 		std::get<e_cast(MEMBER_INDEX::NAME)>(bb_member) = std::get<e_cast(CHROM_INDEX::NAME)>(chrom_list[chrom_id_]);
 		read_data_buf(bb_member);
-		//print_mem<0>(bb_member);
 	    }
 	    else
 	    {
@@ -223,13 +222,10 @@ namespace bigbed
 		input.seekg(std::get<e_cast(OFFSET_INDEX::OFFSET)>(offset));
 		input.read(&temp_buf[0], offset_size);
 
-		//auto& h = std::get<e_cast(HEADER_INDEX::HEADER)>(header_);
-		//std::size_t data_buf_size = std::get<e_cast(BBI_INDEX::UNCOMPRESS_BUF_SIZE)>(h);
 		boost::iostreams::filtering_ostream un_zout(boost::iostreams::zlib_decompressor() | boost::iostreams::back_inserter(data_buf_));
 		boost::iostreams::copy(boost::make_iterator_range(temp_buf), un_zout);
 		
 		read_data_buf(bb_member);
-		//print_mem<0>(bb_member);
 		offset_index_++;
 	    }
 	}
@@ -255,7 +251,6 @@ namespace bigbed
 	void preparse(std::istream& input)
 	{
 	    read_bbi_data<std::istream, BBIHeader, 0>(input, std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
-	    //print_bbi<0>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
 	    auto& chrom_root_offset = std::get<e_cast(BBI_INDEX::CHROM_TREE_OFFSET)>(std::get<e_cast(HEADER_INDEX::HEADER)>(header_));
 	    read_chrom_data(input, chrom_root_offset);
 	    
@@ -463,7 +458,7 @@ namespace bigbed
 	    r_read_bpt(file, root_offset, key_size, val_size >> 1);
 	}
 	
-	void read_data_buf(BBMemberType& bb_member)//, std::string& data_buf)
+	void read_data_buf(BBMemberType& bb_member)
 	{
 	    std::get<e_cast(MEMBER_INDEX::START)>(bb_member) = *(reinterpret_cast<std::uint32_t*>(&data_buf_[4])); 
 	    std::get<e_cast(MEMBER_INDEX::END)>(bb_member) = *(reinterpret_cast<std::uint32_t*>(&data_buf_[8]));
