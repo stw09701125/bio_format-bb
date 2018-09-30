@@ -195,25 +195,25 @@ namespace bigbed
 	
 	void bb_read(std::istream& input, BBMemberType& bb_member)
 	{
+	    auto& chrom_list = std::get<e_cast(HEADER_INDEX::CHROM_LIST)>(header_);
+	    auto& chrom = chrom_list[chrom_id_];
+	    std::get<e_cast(MEMBER_INDEX::NAME)>(bb_member) = std::get<e_cast(CHROM_INDEX::NAME)>(chrom);
+	    
 	    if (data_buf_.size() > 0)
 	    {
-		read_data_buf(bb_member);//, data_buf_);
+		read_data_buf(bb_member);
 		print_mem<0>(bb_member);
-		// update needed
 	    }
 	    else
 	    {
-		auto& chrom_list = std::get<e_cast(HEADER_INDEX::CHROM_LIST)>(header_);
-		auto& chrom = chrom_list[chrom_id_];
 		auto& offset_vector = std::get<e_cast(CHROM_INDEX::OFFSET_LIST)>(chrom);
-		
-		std::get<e_cast(MEMBER_INDEX::NAME)>(bb_member) = std::get<e_cast(CHROM_INDEX::NAME)>(chrom);
 
 		if (offset_index_ == offset_vector.size())
 		{
 		    chrom_id_++;
 		    chrom = chrom_list[chrom_id_];
 		    offset_vector = std::get<e_cast(CHROM_INDEX::OFFSET_LIST)>(chrom);
+		    offset_index_ = 0;
 		}
 	    
 		auto& offset = offset_vector[offset_index_];
@@ -228,9 +228,9 @@ namespace bigbed
 		boost::iostreams::filtering_ostream un_zout(boost::iostreams::zlib_decompressor() | boost::iostreams::back_inserter(data_buf_));
 		boost::iostreams::copy(boost::make_iterator_range(temp_buf), un_zout);
 		
-		read_data_buf(bb_member);//, data_buf_);
+		read_data_buf(bb_member);
 		print_mem<0>(bb_member);
-		//std::cout << data_buf_ << std::endl;
+		offset_index_++;
 	    }
 	}
         
