@@ -180,28 +180,29 @@ TEST(bb_header, member_function)
 }
 
 
-/*
+
 TEST(bb_header, operators)
 {
     using namespace bigbed;
 
     // operator>>
-    std::ifstream ifile(test1_bb() , std::ios::binary);
+    std::ifstream ifile("../test.bb", std::ios::binary);
+    //std::ifstream ifile(test1_bb() , std::ios::binary);
     Header testh1;
     ifile >> testh1;
     static_loop_check_EQ<0>(testh1, test1_header_ans);
     ifile.close();
 
-    // operator<<
+    /*// operator<<
     std::ofstream ofile("output.bb", std::ios::binary);
     ofile << testh1;
     ofile.close();
     ifile.open("output.bb", std::ios::binary);
     Header result(ifile);
     static_loop_check_EQ<0>(result, test1_header_ans);
-    ifile.close();
+    ifile.close();*/
 }
-*/
+
 
 TEST(BigBed, constructor)
 {

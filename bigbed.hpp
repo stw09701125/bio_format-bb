@@ -546,13 +546,23 @@ namespace bigbed
             has_data_ = value;
         }
 
-        void reset();
+        void reset()
+	{
+	    has_data_ = false;
+	    data_members_ = BBMemberType{ std::string(), 0, 0, std::string() };
+	}
 
-        std::string to_string();
+        std::string to_string() const 
+	{
+	    if (!has_data_) return std::string();
+	    return to_string_impl<0>();
+	}
 
         static std::istream& get_obj(std::istream& in, BigBed& obj)
 	{
+	    if (has_data_) reset();
 	    obj.header_.bb_read(in, obj.data_members_);
+	    has_data_ = true;
 	    return in;
 	}
 
@@ -560,13 +570,35 @@ namespace bigbed
 
         friend std::istream& operator>>(std::istream& input, BigBed& rhs)
         {
-            return get_obj(input, rhs);
+	    return get_obj(input, rhs);
         }
 
         friend std::ostream& operator<<(std::ostream& output, const BigBed& rhs);
 
       private:
-        bool has_data_;
+        
+	template<std::size_t n>
+	std::string to_string_impl() const
+	{
+	    std::string result;
+	    if constexpr (n == e_cast(MEMBER_INDEX::START) || n == e_cast(MEMBER_INDEX::END))
+	    {
+		result.append(std::to_string(get_member<n>()));
+		result.append("\t");
+	    }
+	    else if (n == e_cast(MEMBER_INDEX::NAME))
+	    {
+		result.append(get_member<n>());
+		result.append("\t");
+	    }
+	    else
+	    {
+		result.append(get_member<n>());
+		result.append("\n");
+	    }
+	}
+	
+	bool has_data_;
         Header& header_;
         BBMemberType data_members_;
     };
