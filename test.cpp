@@ -193,11 +193,11 @@ TEST(bb_header, operators)
     static_loop_check_EQ<0>(testh1, test1_header_ans);
     ifile.close();
 
-    /*// operator<<
+    // operator<<
     std::ofstream ofile("output.bb", std::ios::binary);
     ofile << testh1;
     ofile.close();
-    ifile.open("output.bb", std::ios::binary);
+    /*ifile.open("output.bb", std::ios::binary);
     Header result(ifile);
     static_loop_check_EQ<0>(result, test1_header_ans);
     ifile.close();*/

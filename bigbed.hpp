@@ -167,43 +167,51 @@ namespace bigbed
     {
       public:        
         Header()
-        : chrom_id_( 0 )
+        : data_count_( 0 )
+	, chrom_id_( 0 )
 	, offset_index_( 0 )
 	, data_buf_( "" ) 
 	, un_zout_( boost::iostreams::zlib_decompressor() )
 	, header_ ( HeaderType { 
-	  BBIHeader { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0}
-        , ChromList() 
-        })
+		    BBIHeader { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0}
+		  , ChromList()
+		  })
 	, is_swapped_( false )
+	, is_written_( false )
         {}
         
         Header(std::istream& input)
-        : chrom_id_( 0 )
+        : data_count_( 0 )
+	, chrom_id_( 0 )
 	, offset_index_( 0 )
 	, data_buf_( "" )
 	, un_zout_( boost::iostreams::zlib_decompressor() )
 	, is_swapped_( false )
+	, is_written_( false )
 	{
             preparse(input);
         }
         
 	Header(const Header& rhs)
-        : chrom_id_( rhs.chrom_id_ )
+        : data_count_( rhs.data_count_ )
+	, chrom_id_( rhs.chrom_id_ )
 	, offset_index_( rhs.offset_index_ )
 	, data_buf_( rhs.data_buf_ )
 	, un_zout_( boost::iostreams::zlib_decompressor() )
 	, header_( rhs.header_ )
 	, is_swapped_( rhs.is_swapped_ )
+	, is_written_( rhs.is_written_ )
 	{}
 
         Header(Header&& rhs)
-        : chrom_id_( std::move(rhs.chrom_id_) )
+        : data_count_( std::move(rhs.data_count_) )
+	, chrom_id_( std::move(rhs.chrom_id_) )
 	, offset_index_( std::move(rhs.offset_index_) )
 	, data_buf_( std::move(rhs.data_buf_) )
 	, un_zout_( boost::iostreams::zlib_decompressor() )
 	, header_( std::move(rhs.header_) )
 	, is_swapped_( std::move(rhs.is_swapped_) )
+	, is_written_( std::move(rhs.is_written_) )
 	{}
 
         Header& operator=(const Header& rhs) = delete;
@@ -216,6 +224,22 @@ namespace bigbed
         {
             return std::get<n>(header_);
         }
+	
+	void decrease_data_count()
+	{
+	    if (data_count_ > 0)
+		--data_count_;
+	}
+
+	auto get_data_count() const
+	{
+	    return data_count_;
+	}
+
+	void set_written()
+	{
+	    is_written_ = true;
+	}
 
         void reset()
 	{
@@ -282,11 +306,16 @@ namespace bigbed
             return input;
         }
 
-        friend std::ostream& operator<<(std::ostream& output, const Header& rhs);
+        friend std::ostream& operator<<(std::ostream& output, Header& rhs)
+	{
+	    rhs.set_written();
+	    return output;
+	}
 
       private:
 
 	// for bigbed reading
+	std::size_t data_count_;
 	std::size_t chrom_id_;
 	std::size_t offset_index_;
 	std::string data_buf_;
@@ -295,14 +324,21 @@ namespace bigbed
 	// for header reading
 	HeaderType header_;
         bool is_swapped_;
+	bool is_written_;
 	void preparse(std::istream& input)
 	{
-	    read_bbi_data<std::istream, BBIHeader, 0>(input, std::get<HEADER_INDEX::HEADER>(header_));
-	    auto& chrom_root_offset = std::get<BBI_INDEX::CHROM_TREE_OFFSET>(std::get<HEADER_INDEX::HEADER>(header_));
+	    read_bbi_data<std::istream, BBIHeader, 0>(
+		    input, std::get<HEADER_INDEX::HEADER>(header_));
+	    auto& h = std::get<HEADER_INDEX::HEADER>(header_);
+	    auto& chrom_root_offset = 
+		std::get<BBI_INDEX::CHROM_TREE_OFFSET>(h);
 	    read_chrom_data(input, chrom_root_offset);
 	    
+	    input.read(reinterpret_cast<char*>(&data_count_), sizeof(std::uint32_t));
+	    
 	    // for ChromList rfind overlapping offset blocks
-	    auto& data_index_offset = std::get<BBI_INDEX::DATA_INDEX_OFFSET>(std::get<HEADER_INDEX::HEADER>(header_));
+	    auto& data_index_offset = 
+		std::get<BBI_INDEX::DATA_INDEX_OFFSET>(h);
 	    read_data_blocks_offset(input, data_index_offset);       
 	}
 
@@ -459,8 +495,10 @@ namespace bigbed
 
 		    auto& chrom_list = std::get<HEADER_INDEX::CHROM_LIST>(header_);
 		    
-		    file.read(reinterpret_cast<char*>(&(std::get<CHROM_INDEX::ID>(chrom_list[i]))), val_size);
-		    file.read(reinterpret_cast<char*>(&(std::get<CHROM_INDEX::SIZE>(chrom_list[i]))), val_size);
+		    file.read(reinterpret_cast<char*>
+			(&(std::get<CHROM_INDEX::ID>(chrom_list[i]))), val_size);
+		    file.read(reinterpret_cast<char*>
+			(&(std::get<CHROM_INDEX::SIZE>(chrom_list[i]))), val_size);
 		    
 		    std::get<CHROM_INDEX::NAME>(chrom_list[i]) = temp_name;
 		}
