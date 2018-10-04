@@ -333,7 +333,7 @@ namespace bigbed
 	    auto& chrom_root_offset = 
 		std::get<BBI_INDEX::CHROM_TREE_OFFSET>(h);
 	    read_chrom_data(input, chrom_root_offset);
-	    
+	   
 	    input.read(reinterpret_cast<char*>(&data_count_), sizeof(std::uint32_t));
 	    
 	    // for ChromList rfind overlapping offset blocks
@@ -640,10 +640,12 @@ namespace bigbed
 	    data_members_ = BBMemberType{ std::string(), 0, 0, std::string() };
 	}
 
-        std::string to_string() const 
+        std::string to_string() 
 	{
 	    if (!has_data_) return std::string();
-	    return to_string_impl<0>();
+	    std::string result;
+	    to_string_impl<0>(result);
+	    return result;
 	}
 
         static std::istream& get_obj(std::istream& in, BigBed& obj)
@@ -666,17 +668,16 @@ namespace bigbed
       private:
         
 	template<std::size_t n>
-	std::string to_string_impl() const
+	void to_string_impl(std::string& result)
 	{
-	    std::string result;
-	    if constexpr (n == MEMBER_INDEX::START || n == MEMBER_INDEX::END)
-	    {
-		result.append(std::to_string(get_member<n>()));
-		result.append("\t");
-	    }
-	    else if (n == MEMBER_INDEX::NAME)
+	    if constexpr (n == MEMBER_INDEX::NAME)
 	    {
 		result.append(get_member<n>());
+		result.append("\t");
+	    }
+	    else if constexpr (n == MEMBER_INDEX::START || n == MEMBER_INDEX::END)
+	    {
+		result.append(std::to_string(get_member<n>()));
 		result.append("\t");
 	    }
 	    else
@@ -684,7 +685,7 @@ namespace bigbed
 		result.append(get_member<n>());
 		result.append("\n");
 	    }
-	    return result;
+	    if constexpr (n != 3) to_string_impl<n+1>(result);
 	}
 	
 	bool has_data_;

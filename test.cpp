@@ -246,6 +246,21 @@ TEST(BigBed, member_function)
     static_loop_check_EQ<0>(test3, test3_bb_ans);
     static_loop_check_EQ<0>(test4.get_header(), test1_header_ans);
     static_loop_check_EQ<0>(test4, test4_bb_ans);
+    
+    // set_member()
+    auto start_pos = test1.get_member<MEMBER_INDEX::START>();
+    test1.set_member<MEMBER_INDEX::START>(100000);
+    auto ans = test1.get_member<MEMBER_INDEX::START>();
+    EXPECT_EQ(ans, 100000);
+    test1.set_member<MEMBER_INDEX::START>(start_pos);
+    
+    // is_valid()
+    EXPECT_TRUE(test1.is_valid());
+    
+    // to_string()
+    std::string temp = 
+    "chr1\t1815107\t1815204\tLSU-rRNA_Hsa\t0\t+\t1815107\t1815204\t0\t1\t97\t0\n";
+    EXPECT_EQ(test1.to_string(), temp); 
 }
 
 /*
