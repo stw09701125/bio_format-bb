@@ -202,6 +202,11 @@ namespace bigbed
             return std::get<n>(header_);
         }
 	
+	void set_written()
+	{
+	    is_written_ = true;
+	}
+
 	void decrease_data_count()
 	{
 	    if (is_written_ && data_count_ > 0)
@@ -667,7 +672,14 @@ namespace bigbed
 	    return in;
 	}
 
-        static void dump(std::ostream& out, std::vector<BigBed>& obj);
+        static void dump(std::ostream& out, std::vector<BigBed>& obj)
+	{
+	    obj[0].header_.set_written();
+	    for (auto& i : obj)
+	    {
+		out << i;
+	    }
+	}
 
         friend std::istream& operator>>(std::istream& input, BigBed& rhs)
         {

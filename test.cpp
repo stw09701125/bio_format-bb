@@ -83,7 +83,8 @@ bigbed::HeaderType test1_header_ans
 
 bigbed::HeaderType test2_header_ans
 {
-
+    bigbed::BBIHeader {0x8789f2eb, 4, 1, 1142, 1190, 1255, 12, 12, 304, 1038, 16384, 1078}
+  , bigbed::ChromList { {"chr1", 0, 248956422, {{1198, 57}} } }
 };
 
 /* default bigbed answer */
@@ -228,19 +229,21 @@ TEST(BigBed, constructor)
 TEST(BigBed, member_function)
 {
     using namespace bigbed;
+    
+    // pre-settings
     std::ifstream ifile("../test.bb", std::ios::binary);
     Header testh1(ifile);
     BigBed test1(testh1);
     BigBed test2(testh1);
     BigBed test3(testh1);
     BigBed test4(testh1);
-    //std::ofstream ofile("outfile.bb", std::ios::binary);
-    //ofile << testh1;
+
+    // get_obj()
     BigBed::get_obj(ifile, test1);
     BigBed::get_obj(ifile, test2);
     BigBed::get_obj(ifile, test3);
     BigBed::get_obj(ifile, test4);
-    //ofile << test1 << test2 << test3 << test4;
+    
     static_loop_check_EQ<0>(test1.get_header(), test1_header_ans);
     static_loop_check_EQ<0>(test1, test1_bb_ans);
     static_loop_check_EQ<0>(test2.get_header(), test1_header_ans);
@@ -250,12 +253,18 @@ TEST(BigBed, member_function)
     static_loop_check_EQ<0>(test4.get_header(), test1_header_ans);
     static_loop_check_EQ<0>(test4, test4_bb_ans);
     
+    // get_member()
+    // Tested in static_loop_check_EQ()
+    
     // set_member()
     auto start_pos = test1.get_member<MEMBER_INDEX::START>();
     test1.set_member<MEMBER_INDEX::START>(100000);
     auto ans = test1.get_member<MEMBER_INDEX::START>();
     EXPECT_EQ(ans, 100000);
     test1.set_member<MEMBER_INDEX::START>(start_pos);
+    
+    // get_header()
+    // Tested in header constructor
     
     // is_valid()
     EXPECT_TRUE(test1.is_valid());
@@ -264,67 +273,27 @@ TEST(BigBed, member_function)
     std::string temp = 
     "chr1\t1815107\t1815204\tLSU-rRNA_Hsa\t0\t+\t1815107\t1815204\t0\t1\t97\t0\n";
     EXPECT_EQ(test1.to_string(), temp); 
-}
-
-/*
-TEST(BigBed, member_function)
-{
-    using namespace bigbed;
-
-    // pre-settings
-    std::ifstream ifile1(test1_bb() , std::ios::binary);
-    Header testh1;
-    ifile1 >> testh1;
-    BigBed test1(testh1);
-
-    std::ifstream ifile2(test2_bb() , std::ios::binary);
-    Header testh2;
-    ifile2 >> testh2;
-    BigBed test2(testh2);
-
-    // get_obj()
-    BigBed::get_obj(ifile1, test1);
-    static_loop_check_EQ<0>(test1, test1_bb_ans);
-    ifile1.close();
-    BigBed::get_obj(ifile2, test2_bb);
-    static_loop_check_EQ<0>(test2, test2_bb_ans);
-    ifile2.close();
     
-    // get_member()
-    // Tested in static_loop_check_EQ()
-
-    // set_member()
-    auto start_pos = test1.get_member<BB_MEMBER_INDEX::START_POS>()
-    test1.set_member<BB_MEMBER_INDEX::START_POS>(100000);
-    auto ans = test1.get_member<BB_MEMBER_INDEX::START_POS>();
-    EXPECT_EQ(ans, 100000);
-    test1.set_member<BB_MEMBER_INDEX::START_POS>(start_pos);
-
-    // get_header()
-    // Tested in header constructor
-
-    // is_valid()
-    EXPECT_TRUE(test1.is_valid());
-
-    // toString()
-    std::string temp = ""; // TO DO
-    EXPECT_EQ(test1.to_string(), temp); 
-
-    // dump()    
+    // dump()
+    std::cout << "dump start" << std::endl;
+    std::ifstream ifile2("../two_line.bb", std::ios::binary);
+    Header testh2(ifile2);
+    BigBed dump1(testh2);
+    BigBed dump2(testh2);
+    ifile2 >> dump1 >> dump2;
+    ifile2.close();
     std::ofstream ofile("output.bb", std::ios::binary);
-    std::vector<BigBed> out_bb {test1, test2};
+    std::vector<BigBed> out_bb {dump1, dump2};
     BigBed::dump(ofile, out_bb);
     ofile.close();
-    ifile1.open("output.bb");
-    Header result_h(ifile1);
+    ifile2.open("output.bb");
+    Header result_h(ifile2);
     BigBed result(result_h);
-    BigBed::get_obj(ifile1, result);
+    BigBed::get_obj(ifile2, result);
     static_loop_check_EQ<0>(result, test1_bb_ans);
-    BigBed::get_obj(ifile1, result);
-    static_loop_check_EQ<0>(result, test2_bb_ans);
-};
-*/
-
+    BigBed::get_obj(ifile2, result);
+    static_loop_check_EQ<0>(result, test3_bb_ans); 
+}
 
 TEST(BigBed, operators)
 {
@@ -337,6 +306,7 @@ TEST(BigBed, operators)
     ifile >> test_h;
     BigBed test2(test_h);
     ifile >> test2;
+    static_loop_check_EQ<0>(test_h, test2_header_ans);
     static_loop_check_EQ<0>(test2, test2_bb_ans);
     ifile.close();
 
