@@ -234,13 +234,13 @@ TEST(BigBed, member_function)
     BigBed test2(testh1);
     BigBed test3(testh1);
     BigBed test4(testh1);
-    std::ofstream ofile("outfile.bb", std::ios::binary);
-    ofile << testh1;
+    //std::ofstream ofile("outfile.bb", std::ios::binary);
+    //ofile << testh1;
     BigBed::get_obj(ifile, test1);
     BigBed::get_obj(ifile, test2);
     BigBed::get_obj(ifile, test3);
     BigBed::get_obj(ifile, test4);
-    ofile << test1 << test2 << test3 << test4;
+    //ofile << test1 << test2 << test3 << test4;
     static_loop_check_EQ<0>(test1.get_header(), test1_header_ans);
     static_loop_check_EQ<0>(test1, test1_bb_ans);
     static_loop_check_EQ<0>(test2.get_header(), test1_header_ans);
@@ -325,34 +325,35 @@ TEST(BigBed, member_function)
 };
 */
 
-/*
+
 TEST(BigBed, operators)
 {
     using namespace bigbed;
 
     // opearator>>
-    std::ifstream ifile(test1_bb() , std::ios::binary);
+    std::ifstream ifile("../one_line.bb", std::ios::binary);
+    //std::ifstream ifile(test1_bb() , std::ios::binary);
     Header test_h;
     ifile >> test_h;
-    BigBed test1(test_h);
-    ifile >> test1;
-    static_loop_check_EQ<0>(test1, test1_bb_ans);
+    BigBed test2(test_h);
+    ifile >> test2;
+    static_loop_check_EQ<0>(test2, test2_bb_ans);
     ifile.close();
 
     // operator<<
     std::ofstream ofile("output.bb", std::ios::binary);
-    outfile << test_h;
-    outfile << test1;
-    outfile.close();
+    ofile << test_h;
+    ofile << test2;
+    ofile.close();
 
     ifile.open("output.bb");
     Header result_h(ifile);
     BigBed result(result_h);
     ifile >> result;
-    static_loop_check_EQ<0>(result, test1_bb_ans);
+    static_loop_check_EQ<0>(result, test2_bb_ans);
     ifile.close();
 }
-*/
+
 
 int main(int argc, char** argv)
 {

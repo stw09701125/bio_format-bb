@@ -139,7 +139,6 @@ namespace bigbed
         : data_count_( 0 )
 	, chrom_id_( 0 )
 	, offset_index_( 0 )
-	, pos_( 0 )
 	, data_buf_( "" )
 	, input_( "" )
 	, un_zout_( boost::iostreams::zlib_decompressor() )
@@ -155,7 +154,6 @@ namespace bigbed
         : data_count_( 0 )
 	, chrom_id_( 0 )
 	, offset_index_( 0 )
-	, pos_( 0 )
 	, data_buf_( "" )
 	, input_( "" )
 	, un_zout_( boost::iostreams::zlib_decompressor() )
@@ -169,7 +167,6 @@ namespace bigbed
         : data_count_( rhs.data_count_ )
 	, chrom_id_( rhs.chrom_id_ )
 	, offset_index_( rhs.offset_index_ )
-	, pos_( rhs.pos_ )
 	, data_buf_( rhs.data_buf_ )
 	, input_( rhs.input_ )
 	, un_zout_( boost::iostreams::zlib_decompressor() )
@@ -182,7 +179,6 @@ namespace bigbed
         : data_count_( std::move(rhs.data_count_) )
 	, chrom_id_( std::move(rhs.chrom_id_) )
 	, offset_index_( std::move(rhs.offset_index_) )
-	, pos_( std::move(rhs.pos_))
 	, data_buf_( std::move(rhs.data_buf_) )
 	, input_( std::move(rhs.input_) )
 	, un_zout_( boost::iostreams::zlib_decompressor() )
@@ -219,7 +215,6 @@ namespace bigbed
 	    data_count_ = 0;
 	    chrom_id_ = 0;
 	    offset_index_ = 0;
-	    pos_ = 0;
 	    data_buf_ = "";
 	    input_ = "";
 	    is_swapped_ = false;
@@ -278,7 +273,7 @@ namespace bigbed
        
 	void write_to_file(std::ostream& output) const
 	{
-	    output << input_;
+	        
 	}
 
 	friend std::istream& operator>>(std::istream& input, Header& rhs)
@@ -299,7 +294,6 @@ namespace bigbed
 	std::size_t data_count_;
 	std::size_t chrom_id_;
 	std::size_t offset_index_;
-	std::size_t pos_;
 	std::string data_buf_;
 	boost::iostreams::filtering_ostream un_zout_;
 	
@@ -316,7 +310,8 @@ namespace bigbed
 	    //std::cout << input_ << std::endl;
 	    auto& h = std::get<HEADER_INDEX::HEADER>(header_);
 	    
-	    read_bbi_data<BBIHeader, 0>(input_, h, pos_);
+	    read_bbi_data<std::istream, BBIHeader, 0>(
+		    input, h);
 	    //print_bbi<0>(h);
 	    auto& chrom_root_offset = 
 		std::get<BBI_INDEX::CHROM_TREE_OFFSET>(h);
@@ -555,28 +550,17 @@ namespace bigbed
 	   std::size_t end_pos = input.tellg();
 	   input.seekg(0, std::ios::beg);
 	   input_.resize(end_pos);
-	   input.read(input_.data(), end_pos);
+	   //input.read(input_.data(), end_pos);
 	}
 
-	template<typename T, size_t n>
-	static void read_bbi_data(std::string& file, T& data, std::size_t& pos)
-	{
-	    using TUPLETYPE = std::remove_reference_t<decltype(std::get<n>(data))>;
-	    std::get<n>(data) = 
-		*(reinterpret_cast<TUPLETYPE*>(file.data() + pos));
-	    pos += sizeof(TUPLETYPE);
-	    if constexpr (n != 11)
-		read_bbi_data<T, n+1>(file, data, pos);
-	}
-
-	/*template<typename F, typename T, size_t n>
+	template<typename F, typename T, size_t n>
 	static void read_bbi_data(F& file, T& data)
 	{
 	    file.read(reinterpret_cast<char*>(&(std::get<n>(data)))
 		    , sizeof(decltype(std::get<n>(data))));
 	    if constexpr (n != 11)
 		read_bbi_data<F, T, n+1>(file, data);
-	}*/
+	}
 	
 	template<size_t n>
 	static void print_bbi(const BBIHeader& bbi)

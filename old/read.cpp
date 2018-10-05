@@ -5,7 +5,8 @@
 
 int main()
 {
-    std::ifstream ifile("../test.bb", std::ios::binary);
+    //std::ifstream ifile("../../test.bb", std::ios::binary);
+    std::ifstream ifile("../../bigfile/human.bb", std::ios::binary);
     std::string s("");
     
     ifile.seekg(0, std::ios::end);
@@ -15,6 +16,8 @@ int main()
     //std::cout << ifile.tellg() << std::endl;
     s.resize(end_pos);
     ifile.read(s.data(), end_pos);
+    std::ofstream ofile("out.bb", std::ios::binary);
+    //ofile << s;
     
     uint32_t magic;
     uint16_t ver;
@@ -31,7 +34,7 @@ int main()
     data_o = *(reinterpret_cast<uint64_t*>(s.data() + 16));
     i_o = *(reinterpret_cast<uint64_t*>(s.data() + 24));
     fc = *(reinterpret_cast<uint16_t*>(s.data() + 32));
-
+/*
     std::cout << magic << std::endl;
     std::cout << ver << std::endl;
     std::cout << z << std::endl;
@@ -39,7 +42,8 @@ int main()
     std::cout << data_o << std::endl;
     std::cout << i_o << std::endl;
     std::cout << fc << std::endl;
-    
+*/   
     //std::cout << s << std::endl;    
+    ofile << s;
     return 0;
 }
