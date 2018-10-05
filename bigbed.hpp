@@ -227,8 +227,9 @@ namespace bigbed
 	
 	void decrease_data_count()
 	{
-	    if (data_count_ > 0)
+	    if (is_written_ && data_count_ > 0)
 		--data_count_;
+	    //std::cout << data_count_ << std::endl;
 	}
 
 	auto get_data_count() const
@@ -236,17 +237,14 @@ namespace bigbed
 	    return data_count_;
 	}
 
-	void set_written()
-	{
-	    is_written_ = true;
-	}
-
         void reset()
 	{
 	    chrom_id_ = 0;
 	    offset_index_ = 0;
 	    data_buf_ = "";
+	    data_count_ = 0;
 	    is_swapped_ = false;
+	    is_written_ = false;
 	    std::get<HEADER_INDEX::HEADER>(header_) = 
 		BBIHeader {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	    
@@ -299,7 +297,12 @@ namespace bigbed
 		offset_index_++;
 	    }
 	}
-        
+       
+	void write_to_file(std::ostream& output) const
+	{
+	        
+	}
+
 	friend std::istream& operator>>(std::istream& input, Header& rhs)
         {
             rhs.preparse(input);
@@ -308,7 +311,7 @@ namespace bigbed
 
         friend std::ostream& operator<<(std::ostream& output, Header& rhs)
 	{
-	    rhs.set_written();
+	    rhs.is_written_ = true;
 	    return output;
 	}
 
@@ -325,11 +328,14 @@ namespace bigbed
 	HeaderType header_;
         bool is_swapped_;
 	bool is_written_;
+	
 	void preparse(std::istream& input)
 	{
-	    read_bbi_data<std::istream, BBIHeader, 0>(
-		    input, std::get<HEADER_INDEX::HEADER>(header_));
 	    auto& h = std::get<HEADER_INDEX::HEADER>(header_);
+	    
+	    read_bbi_data<std::istream, BBIHeader, 0>(
+		    input, h);
+	    //print_bbi<0>(h);
 	    auto& chrom_root_offset = 
 		std::get<BBI_INDEX::CHROM_TREE_OFFSET>(h);
 	    read_chrom_data(input, chrom_root_offset);
@@ -546,9 +552,9 @@ namespace bigbed
 	void read_data_buf(BBMemberType& bb_member)
 	{
 	    std::get<MEMBER_INDEX::START>(bb_member) = 
-		*(reinterpret_cast<std::uint32_t*>(&data_buf_[4])); 
+		*(reinterpret_cast<std::uint32_t*>(data_buf_.data() + 4)); 
 	    std::get<MEMBER_INDEX::END>(bb_member) = 
-		*(reinterpret_cast<std::uint32_t*>(&data_buf_[8]));
+		*(reinterpret_cast<std::uint32_t*>(data_buf_.data() + 8));
 	    std::size_t i = 12;
 	    while(data_buf_[i] != '\0')
 	    {
@@ -637,7 +643,7 @@ namespace bigbed
         void reset()
 	{
 	    has_data_ = false;
-	    data_members_ = BBMemberType{ std::string(), 0, 0, std::string() };
+	    data_members_ = BBMemberType { std::string(), 0, 0, std::string() };
 	}
 
         std::string to_string() 
@@ -663,7 +669,17 @@ namespace bigbed
 	    return get_obj(input, rhs);
         }
 
-        friend std::ostream& operator<<(std::ostream& output, const BigBed& rhs);
+        friend std::ostream& operator<<(std::ostream& output, BigBed& rhs)
+	{
+	    if (rhs.has_data_) 
+	    {
+		rhs.header_.decrease_data_count();
+		//rhs.reset();
+	    }
+	    if (rhs.header_.get_data_count() == 0) 
+		rhs.header_.write_to_file(output);
+	    return output;
+	}
 
       private:
         
@@ -685,7 +701,8 @@ namespace bigbed
 		result.append(get_member<n>());
 		result.append("\n");
 	    }
-	    if constexpr (n != 3) to_string_impl<n+1>(result);
+	    if constexpr (n != 3) 
+		to_string_impl<n+1>(result);
 	}
 	
 	bool has_data_;
