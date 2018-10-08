@@ -22,6 +22,35 @@ namespace biovoltron::format{
 
 namespace bigbed
 {
+    /**
+     * @brief The enumerators help naming elements of tuple types
+     * using in header class and bigbed class.
+     */
+
+    /**
+     * @brief BBIHeader has 12 entries each stores header information
+     * directly from the bigbed file.
+     *
+     * Although BBIHeader is a tuple type, it can be a struct type
+     * combining enumerator BBI_INDEX and tuple BBIHeader.
+     *
+     * struct BBIHeader
+     * {
+     *	std::uint32_t MAGIC;
+     *	std::uint16_t VERSION;
+     *	std::uint16_t ZOOM_LEVELS;
+     *	std::uint64_t CHROM_TREE_OFFSET;
+     *	std::uint64_t DATA_OFFSET;
+     *	std::uint64_t DATA_INDEX_OFFSET;
+     *	std::uint16_t FIELD_COUNT;
+     *  std::uint16_t DEFINED_FIELD;
+     *	std::uint64_t SQL_OFFSET;
+     *	std::uint64_t SUMMARY_OFFSET;
+     *	std::uint32_t UNCOMPRESS_BUF_SIZE;
+     *	std::uint64_t RESERVED;
+     * }
+     */
+
     namespace BBI_INDEX
     {
 	enum BBI_INDEX
@@ -56,6 +85,17 @@ namespace bigbed
       , std::uint64_t
     >;
     
+    /**
+     * @brief Offset is a tuple type stores the offset 
+     * of a compressed block data.
+     *
+     * struct Offset
+     * {
+     *	std::uint64_t OFFSET;
+     *	std::uint64_t SIZE;
+     * }
+     */
+
     namespace OFFSET_INDEX
     {
 	enum OFFSET_INDEX
@@ -70,6 +110,18 @@ namespace bigbed
       , std::uint64_t
     >;
 
+    /**
+     * @brief Chrom is a tuple type stores informations
+     * of each chromosome including name, id, size, and offset_list.
+     *
+     * struct Chrom
+     * {
+     *	std::string NAME;
+     *	std::uint32_t ID;
+     *	std::uint32_t SIZE;
+     *	std::vector<Offset> OFFSET_LIST;
+     * }
+     */
     namespace CHROM_INDEX
     {
 	enum CHROM_INDEX
@@ -88,7 +140,28 @@ namespace bigbed
       , std::vector<Offset>
     >;
 
+    /**
+     * @brief ChromList is just a vector of Chrom.
+     */
+    
     using ChromList = std::vector<Chrom>;
+
+
+    /**
+     * @brief HeaderType has all necessary informations
+     * using in class Header.
+     * 
+     * BBIHeader: Header info.
+     * ChromList: A vector of Chrom
+     * , containing all informations of a chromosome,
+     * to extract data from the bigbed file.
+     * 
+     * struct HeaderType
+     * {
+     *	BBIHeader HEADER;
+     *	ChromList CHROM_LIST;
+     * }
+     */
 
     namespace HEADER_INDEX
     {
@@ -103,6 +176,21 @@ namespace bigbed
         BBIHeader
       , ChromList
     >;
+    
+    /**
+     * @brief BBMemberType has a uncompressed bed data
+     * which include name, start point, end point, and
+     * the string of rest fields.
+     * 
+     * 
+     * struct BBMemberType
+     * {
+     *	std::string NAME;
+     *	std::uint32_t START;
+     *	std::uint32_t END;
+     *	std::string REST;
+     * }
+     */
 
     namespace MEMBER_INDEX
     {
@@ -124,18 +212,39 @@ namespace bigbed
     >;
 
     /**
+     *	@class Header
      *  @brief The header class of bigbed
      *  Each bigbed file share the same header.
      *  The header class is used to constuct a bigbed object.
      * 
      *  If the bigbed objects with the same header 
      *  means they are from the same file. 
+     *
+     *  Member variable:
+     *	    
+     *	    // for bigbed reading
+     *	    std::size_t data_count_;
+     *	    std::size_t chrom_id_;
+     *	    std::size_t offset_index_;
+     *	    std::size_t pos_;
+     *	    std::string data_buf_;
+     *	    boost::iostreams::filtering_ostream un_zout_;
+     *	
+     *	    // for header reading
+     *	    HeaderType header_;
+     *	    std::string input_;
+     *	    bool is_swapped_;
+     *	    bool is_written_;
+     *	    
      */ 
 
     class Header
     {
       public:        
-        Header()
+
+	/** @brief Default constructor */
+        
+	Header()
         : data_count_( 0 )
 	, chrom_id_( 0 )
 	, offset_index_( 0 )
@@ -151,7 +260,12 @@ namespace bigbed
 	, is_written_( false )
         {}
         
-        Header(std::istream& input)
+	/** 
+	 * @brief istream constructor 
+	 * Preparse header information into HeaderType.
+	 */ 
+        
+	Header(std::istream& input)
         : data_count_( 0 )
 	, chrom_id_( 0 )
 	, offset_index_( 0 )
@@ -165,6 +279,8 @@ namespace bigbed
             preparse(input);
         }
         
+	/** @brief copy constructor */
+	
 	Header(const Header& rhs)
         : data_count_( rhs.data_count_ )
 	, chrom_id_( rhs.chrom_id_ )
@@ -178,7 +294,9 @@ namespace bigbed
 	, is_written_( rhs.is_written_ )
 	{}
 
-        Header(Header&& rhs)
+	/** @brief move constructor */
+        
+	Header(Header&& rhs)
         : data_count_( std::move(rhs.data_count_) )
 	, chrom_id_( std::move(rhs.chrom_id_) )
 	, offset_index_( std::move(rhs.offset_index_) )
@@ -191,21 +309,42 @@ namespace bigbed
 	, is_written_( std::move(rhs.is_written_) )
 	{}
 
+	/** 
+	 * @brief set copy assignment 
+	 * and move assignment deleted.
+	 */
+
         Header& operator=(const Header& rhs) = delete;
         Header& operator=(Header&& rhs) = delete;
         
         ~Header() = default;
 
-        template <std::size_t n>
+	/**
+	 * @brief get member from native header type - HeaderType
+	 * template parameter n is the index to header.
+	 */
+        
+	template <std::size_t n>
         auto get_member() const
         {
             return std::get<n>(header_);
         }
 	
+	/**
+	 * @brief set writing flag to true. 
+	 * if flag is true 
+	 * means it is ready to output data to the file.
+	 */
+
 	void set_written()
 	{
 	    is_written_ = true;
 	}
+
+	/**
+	 * @brief decrease data count of the header 
+	 * while write a bed data to the file.
+	 */
 
 	void decrease_data_count()
 	{
@@ -214,10 +353,19 @@ namespace bigbed
 	    //std::cout << data_count_ << std::endl;
 	}
 
+	/** 
+	 * @brief get data count of the header 
+	 * to check if it is equal to 0. 
+	 */
+
 	auto get_data_count() const
 	{
 	    return data_count_;
 	}
+
+	/**
+	 * @brief reset all members in header. 
+	 */
 
         void reset()
 	{
@@ -234,6 +382,20 @@ namespace bigbed
 	    std::get<HEADER_INDEX::CHROM_LIST>(header_).clear();
 	}
 	
+	/**
+	 *  @brief read a block of data 
+	 *  and uncompress the block of data, putting in a data buffer.
+	 *  If the data buffer has data, then read from buffer.
+	 *  Or read a new block of data and uncompress them.
+	 *
+	 *  The data of a BigBed object will be read with bb_read,
+	 *  storing read data in its member.
+	 *   
+	 *  @param input The istream to read data from.
+	 *  @param bb_member The BigBed member type to store read data.
+	 *
+	 */
+
 	void bb_read(std::istream& input, BBMemberType& bb_member)
 	{
 	    auto& chrom_list = 
@@ -281,16 +443,42 @@ namespace bigbed
 	    }
 	}
        
+	/**
+	 * @brief Actually write all data to the output file.
+	 *
+	 * @param output The ostream that keep data.
+	 */
+
 	void write_to_file(std::ostream& output) const
 	{
 	    output << input_;
 	}
+
+	/**
+	 * @brief Operator>> that get header data from the file.
+	 *  
+	 * @param input The istream to be read.
+	 * @param rhs The header to store header information.
+	 *
+	 * @return The istream.
+	 */
 
 	friend std::istream& operator>>(std::istream& input, Header& rhs)
         {
             rhs.preparse(input);
             return input;
         }
+
+	/**
+	 * @brief Operator<< that set writting flag to true.
+	 *
+	 * @param output The ostream parameter 
+	 * keep API the same but do nothing.
+	 *
+	 * @param rhs The header.
+	 *
+	 * @return The ostream.
+	 */
 
         friend std::ostream& operator<<(std::ostream& output, Header& rhs)
 	{
