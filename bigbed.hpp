@@ -281,32 +281,32 @@ namespace bigbed
         
 	/** @brief copy constructor */
 	
-	Header(const Header& rhs)
-        : data_count_( rhs.data_count_ )
-	, chrom_id_( rhs.chrom_id_ )
-	, offset_index_( rhs.offset_index_ )
-	, pos_( rhs.pos_ )
-	, data_buf_( rhs.data_buf_ )
-	, input_( rhs.input_ )
+	Header(const Header& h)
+        : data_count_( h.data_count_ )
+	, chrom_id_( h.chrom_id_ )
+	, offset_index_( h.offset_index_ )
+	, pos_( h.pos_ )
+	, data_buf_( h.data_buf_ )
+	, input_( h.input_ )
 	, un_zout_( boost::iostreams::zlib_decompressor() )
-	, header_( rhs.header_ )
-	, is_swapped_( rhs.is_swapped_ )
-	, is_written_( rhs.is_written_ )
+	, header_( h.header_ )
+	, is_swapped_( h.is_swapped_ )
+	, is_written_( h.is_written_ )
 	{}
 
 	/** @brief move constructor */
         
-	Header(Header&& rhs)
-        : data_count_( std::move(rhs.data_count_) )
-	, chrom_id_( std::move(rhs.chrom_id_) )
-	, offset_index_( std::move(rhs.offset_index_) )
-	, pos_( std::move(rhs.pos_))
-	, data_buf_( std::move(rhs.data_buf_) )
-	, input_( std::move(rhs.input_) )
+	Header(Header&& h)
+        : data_count_( std::move(h.data_count_) )
+	, chrom_id_( std::move(h.chrom_id_) )
+	, offset_index_( std::move(h.offset_index_) )
+	, pos_( std::move(h.pos_))
+	, data_buf_( std::move(h.data_buf_) )
+	, input_( std::move(h.input_) )
 	, un_zout_( boost::iostreams::zlib_decompressor() )
-	, header_( std::move(rhs.header_) )
-	, is_swapped_( std::move(rhs.is_swapped_) )
-	, is_written_( std::move(rhs.is_written_) )
+	, header_( std::move(h.header_) )
+	, is_swapped_( std::move(h.is_swapped_) )
+	, is_written_( std::move(h.is_written_) )
 	{}
 
 	/** 
@@ -790,11 +790,28 @@ namespace bigbed
 		print_mem<n+1>(bb_member);
 	}	
     };
+    
+    /**
+     *	@class BigBed
+     *  @brief a bigbed object has a bed data
+     *  in its data member.
+     *
+     *
+     *  Member variable:
+     *	    
+     *	    bool has_data_;
+     *	    Header& header_;
+     *	    BBMemberType data_members_;
+     *	    
+     */ 
 
     class BigBed
     {
       public:
-        BigBed(Header& header)
+
+	/** @brief default constructor */
+        
+	BigBed(Header& header)
         : header_       ( header )
         , has_data_     ( false )
         , data_members_ ( BBMemberType {
@@ -805,11 +822,20 @@ namespace bigbed
                         })
         {}
 
-        BigBed(const BigBed& rhs) = default;
-        BigBed(BigBed&& rhs) = default;
-        BigBed& operator=(const BigBed& rhs) = default;
-        BigBed& operator=(BigBed&& rhs) = default;
+	/**
+	 * @brief set copy & move constructor to default.
+	 * set copy & move assignment to delete.
+	 */
+        
+	BigBed(const BigBed& bb) = default;
+        BigBed(BigBed&& bb) = default;
+        BigBed& operator=(const BigBed& rhs) = delete;
+        BigBed& operator=(BigBed&& rhs) = delete;
         ~BigBed() = default;
+
+	/**
+	 * @brief get an entry of data members in index n.
+	 */
 
         template<std::size_t n>
         const auto& get_member() const
@@ -817,32 +843,65 @@ namespace bigbed
             return std::get<n>(data_members_);
         }
 
+	/**
+	 * @brief assign a value to a specific data member.
+	 *
+	 * @param value Same type with the data member in index n.
+	 */
+
         template <size_t n>
-        void set_member(const std::tuple_element_t<n, BBMemberType>& rhs)
+        void set_member(const std::tuple_element_t<n, BBMemberType>& value)
         {
-            std::get<n>(data_members_) = rhs;
+            std::get<n>(data_members_) = value;
         }
+
+	/**
+	 * @brief get header.
+	 *
+	 * @return Header reference of header_.
+	 */
 
         const Header& get_header() const
         {
             return header_;
         }
 
+	/**
+	 * @brief check if this object has data.
+	 *
+	 * @return bool has_data_.
+	 */
+
         bool is_valid() const
         {
             return has_data_;
         }
+
+	/**
+	 * @brief set has_data_ to value.
+	 *
+	 * @param bool value assign the bool value to has_data_.
+	 */
 
         void set_valid(bool value)
         {
             has_data_ = value;
         }
 
+	/** @brief reset data */
+
         void reset()
 	{
 	    has_data_ = false;
 	    data_members_ = BBMemberType { std::string(), 0, 0, std::string() };
 	}
+
+	/**
+	 * @brief convert the bed data in the object
+	 * to string.
+	 *
+	 * @return the string of a bed data.
+	 */
 
         std::string to_string() 
 	{
@@ -852,6 +911,16 @@ namespace bigbed
 	    return result;
 	}
 
+	/**
+	 * @brief get data from input bigbed file and 
+	 * set has_data_ to true.
+	 * 
+	 * @param istream in: input bigbed file
+	 * @param BigBed obj: destination to store data
+	 *
+	 * @return istream reference
+	 */
+
         static std::istream& get_obj(std::istream& in, BigBed& obj)
 	{
 	    if (obj.is_valid()) obj.reset();
@@ -860,19 +929,49 @@ namespace bigbed
 	    return in;
 	}
 
+	/**
+	 * @brief dump a vector of BigBed objects 
+	 * which from the same file.
+	 *
+	 * @param ostream out: output file to write to.
+	 * @param vector<BigBed> obj: a set of data to be wrote.
+	 *
+	 */
+
         static void dump(std::ostream& out, std::vector<BigBed>& obj)
 	{
-	    obj[0].header_.set_written();
+	    obj.front().header_.set_written();
 	    for (auto& i : obj)
 	    {
 		out << i;
 	    }
 	}
 
+	/**
+	 * @brief operator>>: get data from input bigbed file with get_obj function.
+	 *
+	 * @param istream input: input file to read from.
+	 * @param BigBed rhs: destination to store bed data.
+	 *
+	 * @return istream reference
+	 */
+
         friend std::istream& operator>>(std::istream& input, BigBed& rhs)
         {
 	    return get_obj(input, rhs);
         }
+
+	/**
+	 * @brief operator<<: write data to output bigbed file from rhs.
+	 * However, only if whole data are written to the file, it writes.
+	 * It decrease data count in the header and check if data count 
+	 * equal to 0, then writes to file.
+	 *
+	 * @param ostream output: output file to write to.
+	 * @param BigBed rhs: data to be wrote.
+	 *
+	 * @return ostream reference output
+	 */
 
         friend std::ostream& operator<<(std::ostream& output, BigBed& rhs)
 	{
