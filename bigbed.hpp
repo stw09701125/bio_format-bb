@@ -504,6 +504,12 @@ namespace bigbed
 	
 	void preparse(std::istream& input)
 	{
+	    
+	    if (input.peek() == std::ifstream::traits_type::eof())
+	    {
+		std::cerr << "empty file" << std::endl;
+		return;
+	    }
 	    reset();
 	    read_whole_data(input);
 	    //std::cout << input_ << std::endl;
