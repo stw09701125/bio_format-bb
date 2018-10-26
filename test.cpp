@@ -231,7 +231,8 @@ TEST(BigBed, member_function)
     using namespace bigbed;
     
     // pre-settings
-    std::ifstream ifile("../test.bb", std::ios::binary);
+    //std::ifstream ifile("../test.bb", std::ios::binary);
+    std::ifstream ifile("../bigfile/test.bb", std::ios::binary);
     Header testh1(ifile);
     BigBed test1(testh1);
     BigBed test2(testh1);
@@ -301,9 +302,11 @@ TEST(BigBed, operators)
 
     // opearator>>
     std::ifstream ifile("../one_line.bb", std::ios::binary);
+    //std::ifstream ifile("../bigfile/test.bb", std::ios::binary);
     //std::ifstream ifile(test1_bb() , std::ios::binary);
     Header test_h;
     ifile >> test_h;
+    std::cout << test_h.get_data_count() << std::endl;
     BigBed test2(test_h);
     ifile >> test2;
     static_loop_check_EQ<0>(test_h, test2_header_ans);

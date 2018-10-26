@@ -520,13 +520,32 @@ namespace bigbed
 	    auto& chrom_root_offset = 
 		std::get<BBI_INDEX::CHROM_TREE_OFFSET>(h);
 	    read_chrom_data(input, chrom_root_offset);
-	   
+	    
+	    /*auto& chrom_list = std::get<HEADER_INDEX::CHROM_LIST>(header_);
+	    
+	    for (auto i : chrom_list)
+	    {
+		std::cout << "name: " << std::get<CHROM_INDEX::NAME>(i) << ", chr_id: " << std::get<CHROM_INDEX::ID>(i) << ", chr_size: " << std::get<CHROM_INDEX::SIZE>(i) << std::endl;
+	    }*/
+
 	    input.read(reinterpret_cast<char*>(&data_count_), sizeof(std::uint32_t));
 	    
 	    // for ChromList rfind overlapping offset blocks
 	    auto& data_index_offset = 
 		std::get<BBI_INDEX::DATA_INDEX_OFFSET>(h);
 	    read_data_blocks_offset(input, data_index_offset);       
+	    
+	    auto& chrom_list = std::get<HEADER_INDEX::CHROM_LIST>(header_);
+	    
+	    for (auto i : chrom_list)
+	    {
+		std::cout << "{ name: " << std::get<CHROM_INDEX::NAME>(i) << ", chr_id: " << std::get<CHROM_INDEX::ID>(i) << ", chr_size: " << std::get<CHROM_INDEX::SIZE>(i) << ", offset_list: ";
+		for (auto v : std::get<CHROM_INDEX::OFFSET_LIST>(i))
+		{
+		    std::cout << "{ " << std::get<OFFSET_INDEX::OFFSET>(v) << ", " << std::get<OFFSET_INDEX::SIZE>(v) << " }";
+		}
+		std::cout << " }" << std::endl;
+	    }
 	}
 
 	template<typename T>
@@ -571,6 +590,7 @@ namespace bigbed
 	    
 	    if (is_leaf)
 	    {
+		//std::cout << "Name: " << std::get<CHROM_INDEX::NAME>(chrom) << ", ID: " << std::get<CHROM_INDEX::ID>(chrom) << ", List: ";
 		for (std::size_t i = 0; i < child_num; ++i)
 		{
 		    std::uint32_t start_chrom_ix;
@@ -590,8 +610,11 @@ namespace bigbed
 		    if (is_overlapped(id, start, end, start_chrom_ix, start_base, end_chrom_ix, end_base))
 		    {
 			offset_list.push_back({block_offset, block_size});
+			//std::cout << "{ Name: " << std::get<CHROM_INDEX::NAME>(chrom) << ", ID: " << std::get<CHROM_INDEX::ID>(chrom);
+			//std::cout << "{ " << block_offset << ", " << block_size << " } } ";
 		    }
 		}
+		//std::cout << std::endl;
 	    }
 	    
 	    else
@@ -657,6 +680,7 @@ namespace bigbed
 	    
 	    for (auto& i : chrom_list)
 	    {
+		//std::cout << "Name: " << std::get<CHROM_INDEX::NAME>(i) << ", ID: " << std::get<CHROM_INDEX::ID>(i) << std::endl;
 		std::get<CHROM_INDEX::OFFSET_LIST>(i).reserve(items_per_slot);
 		r_read_Rtree(file, root_offset, i);
 	    }
@@ -684,13 +708,16 @@ namespace bigbed
 		    temp_name[key_size] = '\0';
 
 		    auto& chrom_list = std::get<HEADER_INDEX::CHROM_LIST>(header_);
-		    
+		    std::uint32_t cid;
+		    file.read(reinterpret_cast<char*>(&cid), val_size);
+		    std::get<CHROM_INDEX::ID>(chrom_list[cid]) = cid;
+		    //file.read(reinterpret_cast<char*>(&(std::get<CHROM_INDEX::ID>(chrom_list[i]))), val_size);
 		    file.read(reinterpret_cast<char*>
-			(&(std::get<CHROM_INDEX::ID>(chrom_list[i]))), val_size);
-		    file.read(reinterpret_cast<char*>
-			(&(std::get<CHROM_INDEX::SIZE>(chrom_list[i]))), val_size);
+			(&(std::get<CHROM_INDEX::SIZE>(chrom_list[cid]))), val_size);
 		    
-		    std::get<CHROM_INDEX::NAME>(chrom_list[i]) = temp_name;
+		    std::get<CHROM_INDEX::NAME>(chrom_list[cid]) = temp_name;
+		    
+		    //std::cout << "{ name: " << std::get<CHROM_INDEX::NAME>(chrom_list[i]) << ", chr_id: " << std::get<CHROM_INDEX::ID>(chrom_list[i]) << ", chr_size: " << std::get<CHROM_INDEX::SIZE>(chrom_list[i]) << " }" << std::endl;
 		}
 	    }
 	    
@@ -728,6 +755,7 @@ namespace bigbed
 	    file.read(reinterpret_cast<char*>(&item_count), sizeof(item_count));
 	    file.read(reinterpret_cast<char*>(&reserved), sizeof(reserved));
 	    std::get<HEADER_INDEX::CHROM_LIST>(header_).resize(item_count);
+	    std::cout << "item_count: " << item_count << std::endl;
 	    std::size_t root_offset = file.tellg();
 	    
 	    r_read_bpt(file, root_offset, key_size, val_size >> 1);
