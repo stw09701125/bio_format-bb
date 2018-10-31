@@ -9,6 +9,7 @@
 #include <iostream>
 #include <tuple>
 #include <vector>
+#include <exception>
 #include <boost/iostreams/stream.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
@@ -22,6 +23,22 @@ namespace biovoltron::format{
 
 namespace bigbed
 {
+    /**
+     * @class Exception
+     * @brief An exception class which inherit from std::runtime_error
+     *
+     * The class Exception will be thrown if the class bigbed have any
+     * behaviors in excepted situations.
+     */
+    class Exception : public std::runtime_error
+    {
+      public:
+        Exception(const std::string& msg)
+	  : runtime_error(std::string("BigBed Exception: " + msg))
+	{
+	}    
+    };
+
     /**
      * @brief The enumerators help naming elements of tuple types
      * using in header class and bigbed class.
@@ -482,7 +499,8 @@ namespace bigbed
 
         friend std::ostream& operator<<(std::ostream& output, Header& rhs)
 	{
-	    rhs.is_written_ = true;
+	    if (rhs.is_written_ == false)
+		rhs.is_written_ = true;
 	    return output;
 	}
 
@@ -504,11 +522,12 @@ namespace bigbed
 	
 	void preparse(std::istream& input)
 	{
+	    
+	    if (!input.good())
+		throw Exception("ERROR: preparse(): file error\n");
 	    if (input.peek() == std::ifstream::traits_type::eof())
-	    {
-		std::cerr << "empty file" << std::endl;
-		return;
-	    }
+		throw Exception("ERROR: preparse(): empty file\n");
+	    
 	    reset();
 	    read_whole_data(input);
 	    //std::cout << input_ << std::endl;
@@ -527,12 +546,21 @@ namespace bigbed
 		std::cout << "name: " << std::get<CHROM_INDEX::NAME>(i) << ", chr_id: " << std::get<CHROM_INDEX::ID>(i) << ", chr_size: " << std::get<CHROM_INDEX::SIZE>(i) << std::endl;
 	    }*/
 	    
-	    auto now = input.tellg();
-	    std::uint32_t dc = 0;
-	    dc = *(reinterpret_cast<std::uint32_t*>(input_.data() + now));
-	    std::cout << "dc: " << dc << std::endl;
+	    //auto now = input.tellg();
+	    //std::uint32_t dc = 0;
+	    //dc = *(reinterpret_cast<std::uint32_t*>(input_.data() + now));
+	    //std::cout << "dc: " << dc << std::endl;
 	    
-	    //input.read(reinterpret_cast<char*>(&data_count_), sizeof(std::uint32_t));
+	    input.read(reinterpret_cast<char*>(&data_count_), sizeof(std::uint32_t));
+	    
+	    if (data_count_ == 0)
+	    {
+		throw Exception(
+			"ERROR: preparse(): " 
+			"the number of chromosomes is bigger than 256\n"
+			);
+	    }
+	    
 	    //std::cout << "data_count" << data_count_ << std::endl;
 
 	    // for ChromList rfind overlapping offset blocks
@@ -760,7 +788,7 @@ namespace bigbed
 	    file.read(reinterpret_cast<char*>(&item_count), sizeof(item_count));
 	    file.read(reinterpret_cast<char*>(&reserved), sizeof(reserved));
 	    std::get<HEADER_INDEX::CHROM_LIST>(header_).resize(item_count);
-	    std::cout << "item_count: " << item_count << std::endl;
+	    //std::cout << "item_count: " << item_count << std::endl;
 	    std::size_t root_offset = file.tellg();
 	    
 	    r_read_bpt(file, root_offset, key_size, val_size >> 1);
