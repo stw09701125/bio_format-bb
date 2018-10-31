@@ -6,7 +6,7 @@ using namespace biovoltron::format;
 
 int main()
 {
-    std::ifstream ifile("../bigfile/file.bb", std::ios::binary);
+    std::ifstream ifile("../bigfile/test3.bb", std::ios::binary);
     //std::ifstream ifile("../hg19.bb", std::ios::binary);
     bigbed::Header h(ifile);
     //auto data_count = h.get_data_count(); 

@@ -504,7 +504,6 @@ namespace bigbed
 	
 	void preparse(std::istream& input)
 	{
-	    
 	    if (input.peek() == std::ifstream::traits_type::eof())
 	    {
 		std::cerr << "empty file" << std::endl;
@@ -527,9 +526,15 @@ namespace bigbed
 	    {
 		std::cout << "name: " << std::get<CHROM_INDEX::NAME>(i) << ", chr_id: " << std::get<CHROM_INDEX::ID>(i) << ", chr_size: " << std::get<CHROM_INDEX::SIZE>(i) << std::endl;
 	    }*/
-
-	    input.read(reinterpret_cast<char*>(&data_count_), sizeof(std::uint32_t));
 	    
+	    auto now = input.tellg();
+	    std::uint32_t dc = 0;
+	    dc = *(reinterpret_cast<std::uint32_t*>(input_.data() + now));
+	    std::cout << "dc: " << dc << std::endl;
+	    
+	    //input.read(reinterpret_cast<char*>(&data_count_), sizeof(std::uint32_t));
+	    //std::cout << "data_count" << data_count_ << std::endl;
+
 	    // for ChromList rfind overlapping offset blocks
 	    auto& data_index_offset = 
 		std::get<BBI_INDEX::DATA_INDEX_OFFSET>(h);
@@ -537,7 +542,7 @@ namespace bigbed
 	    
 	    auto& chrom_list = std::get<HEADER_INDEX::CHROM_LIST>(header_);
 	    
-	    for (auto i : chrom_list)
+	    /*for (auto i : chrom_list)
 	    {
 		std::cout << "{ name: " << std::get<CHROM_INDEX::NAME>(i) << ", chr_id: " << std::get<CHROM_INDEX::ID>(i) << ", chr_size: " << std::get<CHROM_INDEX::SIZE>(i) << ", offset_list: ";
 		for (auto v : std::get<CHROM_INDEX::OFFSET_LIST>(i))
@@ -545,7 +550,7 @@ namespace bigbed
 		    std::cout << "{ " << std::get<OFFSET_INDEX::OFFSET>(v) << ", " << std::get<OFFSET_INDEX::SIZE>(v) << " }";
 		}
 		std::cout << " }" << std::endl;
-	    }
+	    }*/
 	}
 
 	template<typename T>
@@ -674,7 +679,7 @@ namespace bigbed
 	    file.read(reinterpret_cast<char*>(&data_end_offset), sizeof(data_end_offset));
 	    file.read(reinterpret_cast<char*>(&items_per_slot), sizeof(items_per_slot));
 	    file.read(reinterpret_cast<char*>(&reserved), sizeof(reserved));
-
+	    //std::cout << "item count from R tree: " << item_count << std::endl;
 	    std::size_t root_offset = file.tellg();
 	    auto& chrom_list = std::get<HEADER_INDEX::CHROM_LIST>(header_);
 	    
